@@ -1,35 +1,52 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Tabs, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const router = useRouter();
 
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+	return (
+		<Tabs
+			screenOptions={{
+				headerStyle: {
+					borderBottomWidth: 1,
+				},
+				headerTitleStyle: {
+					fontWeight: 'bold',
+				},
+				tabBarStyle: {
+				},
+				tabBarLabelStyle: {
+					fontSize: 14,
+					fontWeight: '600',
+				},
+			}}
+		>
+			<Tabs.Screen
+				name="index"
+				options={{
+					tabBarLabel: 'Map',
+					headerTitle: 'Katy Trail Map',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="map" size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="trips"
+				options={{
+					tabBarLabel: 'Trips',
+					headerTitle: 'My Trips',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="bicycle" size={size} color={color} />
+					),
+          headerRight: () => (
+            <Pressable onPress={() => router.push('/(tabs)/trips')}>
+              <Ionicons name="add-circle" size={28} />
+            </Pressable>
+          ),
+				}}
+			/>
+		</Tabs>
+	);
 }

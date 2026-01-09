@@ -5,20 +5,21 @@ export const Fonts = {
 
 export const Colors = {
 	light: {
-		primary: colorFn('rgb(163, 169, 101)'),
+		// primary: colorFn('rgb(55 113 94)'),
+		primary: colorFn('rgb(62 103 42)'),
 		border: colorFn('rgb(255, 251, 206)'),
 		secondary: colorFn('rgb(153, 123, 89)'),
 		text: colorFn('rgb(0, 0, 0)'),
 		surface: colorFn('rgb(253 255 225)'),
-		accent: colorFn('rgb(198, 108, 72)'),
+		accent: colorFn('rgb(220, 100, 110)'),
 	},
 	dark: {
-		primary: colorFn('rgb(180, 186, 120)'),
+		primary: colorFn('rgb(183 231 150)'),
 		border: colorFn('rgb(60, 58, 40)'),
 		secondary: colorFn('rgb(178, 144, 104)'),
 		text: colorFn('rgb(240, 238, 220)'),
-		surface: colorFn('rgb(28, 30, 22)'),
-		accent: colorFn('rgb(198, 108, 72)'),
+		surface: colorFn('rgb(18, 24, 38)'),
+		accent: colorFn('rgb(220, 100, 110)'),
 	},
 };
 

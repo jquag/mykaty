@@ -21,7 +21,7 @@ export default function TrailheadMarker({ waypoint, markerSize, showLabels = tru
 			<View style={{}}>
 				<View style={{
 					borderWidth: 1,
-					borderColor: colors.text(),
+					borderColor: colors.border(),
 					backgroundColor: colors.primary(),
 					width: markerSize,
 					height: markerSize,

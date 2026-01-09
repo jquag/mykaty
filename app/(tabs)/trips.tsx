@@ -8,7 +8,7 @@ export default function Index() {
     <View
       style={{ backgroundColor: colors.surface(), flex: 1, justifyContent: 'center', alignItems: 'center' }}
     >
-      <AppText>Trips page</AppText>
+      <AppText style={{color: colors.primary()}}>Trips page</AppText>
     </View>
   );
 }

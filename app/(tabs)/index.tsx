@@ -12,11 +12,7 @@ export default function Index() {
 
 	const { showLabels, showMarkers } = useMemo(() => {
 		const delta = currentRegion?.latitudeDelta ?? getTrailRegion().latitudeDelta;
-
-		const showLabels = delta < 2;
-		const showMarkers = delta < 6;
-
-		return { showLabels, showMarkers };
+		return { showLabels: delta < 2, showMarkers: delta < 6 };
 	}, [currentRegion?.latitudeDelta]);
 
   return (

@@ -1,6 +1,7 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from 'react-native';
+import { Fonts } from '@/utils/theme';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -12,7 +13,8 @@ export default function TabLayout() {
 					borderBottomWidth: 1,
 				},
 				headerTitleStyle: {
-					fontWeight: 'bold',
+					fontFamily: Fonts.heading,
+					fontSize: 20,
 				},
 				tabBarStyle: {
 				},

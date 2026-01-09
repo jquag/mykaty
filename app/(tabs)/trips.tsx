@@ -1,15 +1,14 @@
-import { Text, View } from "react-native";
+import AppText from "@/components/ui/AppText";
+import useColors from "@/hooks/use-colors";
+import { View } from "react-native";
 
 export default function Index() {
+	const colors = useColors();
   return (
     <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
+      style={{ backgroundColor: colors.surface(), flex: 1, justifyContent: 'center', alignItems: 'center' }}
     >
-      <Text>Trips page</Text>
+      <AppText>Trips page</AppText>
     </View>
   );
 }

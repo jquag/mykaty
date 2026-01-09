@@ -1,6 +1,8 @@
 import { Marker } from "react-native-maps";
 import type { Waypoint } from "@/constants/waypoints";
 import { Text, View } from "react-native";
+import AppText from "./ui/AppText";
+import useColors from "@/hooks/use-colors";
 
 interface Props {
 	waypoint: Waypoint;
@@ -9,6 +11,7 @@ interface Props {
 }
 
 export default function TrailheadMarker({ waypoint, markerSize, showLabels = true }: Props) {
+	const colors = useColors();
 	return (
 		<Marker
 			coordinate={{ latitude: waypoint.lat, longitude: waypoint.lng }}
@@ -18,8 +21,8 @@ export default function TrailheadMarker({ waypoint, markerSize, showLabels = tru
 			<View style={{}}>
 				<View style={{
 					borderWidth: 1,
-					borderColor: 'black',
-					backgroundColor: 'white',
+					borderColor: colors.text(),
+					backgroundColor: colors.primary(),
 					width: markerSize,
 					height: markerSize,
 					borderRadius: markerSize / 2,
@@ -32,18 +35,17 @@ export default function TrailheadMarker({ waypoint, markerSize, showLabels = tru
 						width: 100,
 						alignItems: 'center',
 					}}>
-						<Text numberOfLines={1} style={{
-								fontSize: 10,
+						<AppText numberOfLines={1} style={{
+								fontSize: 11,
 								fontWeight: '600',
-								paddingHorizontal: 2,
-								paddingVertical: 1,
+								paddingHorizontal: 4,
+								paddingVertical: 2,
 								borderRadius: 4,
 								overflow: 'hidden',
-								color: 'black',
-								backgroundColor: 'rgba(255, 255, 255, 0.8)',
+								backgroundColor: colors.surface(.8),
 							}}>
 							{waypoint.name}
-						</Text>
+						</AppText>
 					</View>
 				)}
 			</View>

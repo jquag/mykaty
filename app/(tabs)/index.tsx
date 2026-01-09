@@ -1,16 +1,19 @@
 import TrailheadMarker from "@/components/TrailheadMarker";
+import AppText from "@/components/ui/AppText";
 import { trailPoints } from "@/constants/trailPoints";
 import { waypoints } from "@/constants/waypoints";
+import useColors from "@/hooks/use-colors";
 import { getTrailRegion } from "@/utils/trail";
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
 import MapView, { Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 
 export default function Index() {
 	const mapRef = useRef<MapView>(null);
 	const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
+	const colors = useColors();
 
 	const { showLabels, showMarkers } = useMemo(() => {
 		const delta = currentRegion?.latitudeDelta ?? getTrailRegion().latitudeDelta;
@@ -35,8 +38,8 @@ export default function Index() {
 						latitude: point.lat,
 						longitude: point.lng
 					}))}
-					strokeColor={"orange"}
-					strokeWidth={3}
+					strokeColor={colors.accent()}
+					strokeWidth={4}
 				/>
 				{showMarkers ? waypoints.map((waypoint, index) => (
 					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels} markerSize={14} />
@@ -46,9 +49,9 @@ export default function Index() {
 				onPress={() => mapRef.current?.animateToRegion(getTrailRegion())}
 				style={{
 					position: 'absolute',
-					top: 60,
+					top: 20,
 					right: 16,
-					backgroundColor: 'rgba(255, 255, 255, 0.7)',
+					backgroundColor: colors.surface(.7),
 					borderRadius: 8,
 					padding: 8,
 					flexDirection: 'row',
@@ -56,8 +59,8 @@ export default function Index() {
 					gap: 4,
 				}}
 			>
-				<Ionicons name="locate" size={18} color="#333" />
-				<Text>Trail</Text>
+				<Ionicons name="locate" size={18} color={colors.text()} />
+				<AppText>Trail</AppText>
 			</Pressable>
     </View>
   );

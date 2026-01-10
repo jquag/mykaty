@@ -69,6 +69,7 @@ const TabBarBackground = () => {
 				style={StyleSheet.absoluteFill}
 				resizeMode="cover"
 			>
+				<View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface(0.2) }]} />
 			</ImageBackground>
 		);
 	} else {

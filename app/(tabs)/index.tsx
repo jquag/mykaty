@@ -224,14 +224,14 @@ export default function Index() {
 				onPress={toggleMeasureMode}
 				style={{
 					position: 'absolute',
-					top: 70,
+					top: 60,
 					right: 16,
-					backgroundColor: measureMode ? colors.primary(0.9) : colors.surface(.7),
+					backgroundColor: measureMode ? colors.accent(0.9) : colors.surface(.7),
 					borderRadius: 8,
 					padding: 8,
 					flexDirection: 'row',
 					alignItems: 'center',
-					gap: 4,
+					gap: 6,
 				}}
 			>
 				<MaterialCommunityIcons

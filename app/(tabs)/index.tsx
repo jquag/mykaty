@@ -1,8 +1,9 @@
 import MeasureMarker from "@/components/MeasureMarker";
 import TrailheadMarker from "@/components/TrailheadMarker";
+import TrailheadBottomSheet from "@/components/TrailheadBottomSheet/TrailheadBottomSheet";
 import AppText from "@/components/ui/AppText";
 import { trailPoints } from "@/constants/trailPoints";
-import { waypoints } from "@/constants/waypoints";
+import { Waypoint, waypoints } from "@/constants/waypoints";
 import useColors from "@/hooks/use-colors";
 import { getTrailRegion } from "@/utils/trail";
 import { calculateTrailDistance } from "@/utils/map";
@@ -101,6 +102,27 @@ export default function Index() {
 		const delta = currentRegion?.latitudeDelta ?? getTrailRegion().latitudeDelta;
 		return { showLabels: delta < 1.2, showMarkers: delta < 6 };
 	}, [currentRegion?.latitudeDelta]);
+
+	// Filter waypoints to those visible in the current viewport
+	const visibleWaypoints = useMemo(() => {
+		if (!currentRegion || !showMarkers) return [];
+		return waypoints.filter(wp => {
+			const latDiff = Math.abs(wp.lat - currentRegion.latitude);
+			const lngDiff = Math.abs(wp.lng - currentRegion.longitude);
+			return latDiff < currentRegion.latitudeDelta / 2 &&
+				lngDiff < currentRegion.longitudeDelta / 2;
+		});
+	}, [currentRegion, showMarkers]);
+
+	// Handle trailhead press from bottom sheet
+	const handleTrailheadPress = useCallback((waypoint: Waypoint) => {
+		mapRef.current?.animateToRegion({
+			latitude: waypoint.lat,
+			longitude: waypoint.lng,
+			latitudeDelta: 0.05,
+			longitudeDelta: 0.05,
+		}, 500);
+	}, []);
 
   return (
     <View style={{flex: 1}}>
@@ -271,6 +293,11 @@ export default function Index() {
 					</Pressable>
 				</View>
 			)}
+
+			<TrailheadBottomSheet
+				waypoints={visibleWaypoints}
+				onTrailheadPress={handleTrailheadPress}
+			/>
     </View>
   );
 }

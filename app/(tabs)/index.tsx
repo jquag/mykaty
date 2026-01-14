@@ -1,8 +1,9 @@
 import MeasureMarker from "@/components/MeasureMarker";
 import TrailheadMarker from "@/components/TrailheadMarker";
+import TrailheadBottomSheet from "@/components/TrailheadBottomSheet/TrailheadBottomSheet";
 import AppText from "@/components/ui/AppText";
 import { trailPoints } from "@/constants/trailPoints";
-import { waypoints } from "@/constants/waypoints";
+import { Waypoint, waypoints } from "@/constants/waypoints";
 import useColors from "@/hooks/use-colors";
 import { getTrailRegion } from "@/utils/trail";
 import { calculateTrailDistance } from "@/utils/map";
@@ -11,6 +12,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
 import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+
+const BOTTOM_SHEET_PARTIAL_OPEN_PERCENT = 0.4;
 
 export default function Index() {
 	const mapRef = useRef<MapView>(null);
@@ -101,6 +104,31 @@ export default function Index() {
 		const delta = currentRegion?.latitudeDelta ?? getTrailRegion().latitudeDelta;
 		return { showLabels: delta < 1.2, showMarkers: delta < 6 };
 	}, [currentRegion?.latitudeDelta]);
+
+	// Filter waypoints to those visible in the current viewport
+	const visibleWaypoints = useMemo(() => {
+		if (!currentRegion || !showMarkers) return [];
+		return waypoints.filter(wp => {
+			const latDiff = Math.abs(wp.lat - currentRegion.latitude);
+			const lngDiff = Math.abs(wp.lng - currentRegion.longitude);
+			return latDiff < currentRegion.latitudeDelta / 2 &&
+				lngDiff < currentRegion.longitudeDelta / 2;
+		});
+	}, [currentRegion, showMarkers]);
+
+	// Handle trailhead press from bottom sheet
+	// Offset the center so the marker appears in the visible area above the sheet
+	const handleTrailheadPress = useCallback((waypoint: Waypoint) => {
+		const latDelta = currentRegion?.latitudeDelta ?? 0.05;
+		const latOffset = (latDelta * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT) / 2;
+
+		mapRef.current?.animateToRegion({
+			latitude: waypoint.lat - latOffset,
+			longitude: waypoint.lng,
+			latitudeDelta: latDelta,
+			longitudeDelta: currentRegion?.longitudeDelta ?? 0.05,
+		}, 500);
+	}, [currentRegion]);
 
   return (
     <View style={{flex: 1}}>
@@ -271,6 +299,12 @@ export default function Index() {
 					</Pressable>
 				</View>
 			)}
+
+			<TrailheadBottomSheet
+				waypoints={visibleWaypoints}
+				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
+				onTrailheadPress={handleTrailheadPress}
+			/>
     </View>
   );
 }

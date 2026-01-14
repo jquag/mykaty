@@ -8,23 +8,24 @@ interface Props {
 	waypoint: Waypoint;
 	showLabels?: boolean;
 	focused?: boolean;
+	onPress?: () => void;
 }
 
-export default function TrailheadMarker({ waypoint, showLabels = true, focused = false }: Props) {
+export default function TrailheadMarker({ waypoint, showLabels = true, focused = false, onPress }: Props) {
 	const colors = useColors();
 	const markerSize = focused ? 24 : 14;
 	return (
 		<Marker
 			key={`${waypoint.lat}-${waypoint.lng}-${focused}`}
 			coordinate={{ latitude: waypoint.lat, longitude: waypoint.lng }}
-			title={waypoint.name}
 			anchor={{ x: 0.5, y: 0.5 }}
 			tracksViewChanges={true}
+			onPress={onPress}
 		>
 			<View style={{ width: markerSize, height: markerSize }}>
 				<View style={{
 					borderWidth: focused ? 3 : 1,
-					borderColor: focused ? colors.border() : colors.border(),
+					borderColor: focused ? colors.accent() : colors.border(),
 					backgroundColor: colors.primary(),
 					width: markerSize,
 					height: markerSize,

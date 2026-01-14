@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet, useWindowDimensions, Pressable } from 'react-native';
 import Animated, {
 	useAnimatedStyle,
@@ -13,6 +13,7 @@ import TrailheadListItem from './TrailheadListItem';
 
 interface Props {
 	waypoints: Waypoint[];
+	selectedPoi: Waypoint | null;
 	onPoiSelected: (waypoint: Waypoint) => void;
 	onClearPoiSelection: () => void;
 	partialOpenHeight: string | number;
@@ -20,6 +21,7 @@ interface Props {
 
 export default function TrailheadBottomSheet({
 	waypoints,
+	selectedPoi,
 	onPoiSelected,
 	onClearPoiSelection,
 	partialOpenHeight,
@@ -29,18 +31,20 @@ export default function TrailheadBottomSheet({
 
 	const snapPoints = useMemo(() => [55, partialOpenHeight, '95%'], [partialOpenHeight]);
 	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(0);
-	const [detailItem, setDetailItem] = useState<Waypoint | null>(null);
+	const listRef = useRef<any>(null);
 
 	const translateX = useSharedValue(width);
 
 	useEffect(() => {
-		if (detailItem) {
+		if (selectedPoi) {
 			translateX.value = withTiming(0, { duration: 250 });
+			setCurrentSnapPoint(1);
 		} else {
 			translateX.value = width;
+			listRef.current?.scrollToOffset({ offset: 0, animated: false });
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [detailItem]);
+	}, [selectedPoi]);
 
 	const detailAnimatedStyle = useAnimatedStyle(() => ({
 		transform: [{ translateX: translateX.value }],
@@ -52,9 +56,8 @@ export default function TrailheadBottomSheet({
 
 	const handleCloseDetail = () => {
 		translateX.value = withTiming(width, { duration: 250 });
-		onClearPoiSelection();
 		setTimeout(() => {
-			setDetailItem(null);
+			onClearPoiSelection();
 			if (currentSnapPoint === 2) setCurrentSnapPoint(1);
 		}, 250);
 	};
@@ -63,8 +66,6 @@ export default function TrailheadBottomSheet({
 		<TrailheadListItem
 			waypoint={item}
 			onPress={() => {
-				setCurrentSnapPoint(1); //reset to the partially open state
-				setDetailItem(item);
 				onPoiSelected(item);
 			}}
 		/>
@@ -90,6 +91,7 @@ export default function TrailheadBottomSheet({
 			<Animated.View style={[styles.listContainer, listAnimatedStyle]}>
 				{waypoints.length > 0 ? (
 					<BottomSheetFlatList
+						ref={listRef}
 						data={waypoints}
 						keyExtractor={(item: Waypoint) => `${item.lat}-${item.lng}`}
 						renderItem={renderItem}
@@ -99,10 +101,10 @@ export default function TrailheadBottomSheet({
 					renderEmptyMessage()
 				)}
 			</Animated.View>
-			{detailItem && (
+			{selectedPoi && (
 				<Animated.View style={[styles.detailOverlay, { backgroundColor: colors.surface(0) }, detailAnimatedStyle]}>
 					<View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 }}>
-						<AppText>{detailItem.name}</AppText>
+						<AppText>{selectedPoi.name}</AppText>
 						<Pressable onPress={handleCloseDetail}>
 							<AppText>X</AppText>
 						</Pressable>

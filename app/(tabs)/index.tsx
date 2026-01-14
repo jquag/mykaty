@@ -175,7 +175,7 @@ export default function Index() {
 				)}
 
 				{showMarkers && (!measureMode || showLabels) ? waypoints.map((waypoint, index) => (
-					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedPoi === waypoint} focused={selectedPoi === waypoint} />
+					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedPoi === waypoint} focused={selectedPoi === waypoint} onPress={() => handlePoiSelected(waypoint)} />
 				)) : null}
 
 				{/* Start marker */}
@@ -308,6 +308,7 @@ export default function Index() {
 
 			<TrailheadBottomSheet
 				waypoints={visibleWaypoints}
+				selectedPoi={selectedPoi}
 				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
 				onPoiSelected={handlePoiSelected}
 				onClearPoiSelection={handleClearPoiSelection}

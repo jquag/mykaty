@@ -19,6 +19,7 @@ export default function Index() {
 	const mapRef = useRef<MapView>(null);
 	const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
 	const colors = useColors();
+	const [selectedPoi, setSelectedPoi] = useState<Waypoint | null>(null);
 
 	// Distance measuring state
 	const [measureMode, setMeasureMode] = useState(false);
@@ -118,7 +119,8 @@ export default function Index() {
 
 	// Handle trailhead press from bottom sheet
 	// Offset the center so the marker appears in the visible area above the sheet
-	const handleTrailheadPress = useCallback((waypoint: Waypoint) => {
+	const handlePoiSelected = useCallback((waypoint: Waypoint) => {
+		setSelectedPoi(waypoint);
 		const latDelta = currentRegion?.latitudeDelta ?? 0.05;
 		const latOffset = (latDelta * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT) / 2;
 
@@ -129,6 +131,10 @@ export default function Index() {
 			longitudeDelta: currentRegion?.longitudeDelta ?? 0.05,
 		}, 500);
 	}, [currentRegion]);
+
+	const handleClearPoiSelection = useCallback(() => {
+		setSelectedPoi(null);
+	}, []);
 
   return (
     <View style={{flex: 1}}>
@@ -169,7 +175,7 @@ export default function Index() {
 				)}
 
 				{showMarkers && (!measureMode || showLabels) ? waypoints.map((waypoint, index) => (
-					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels} markerSize={measureMode ? 14 : 14} />
+					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedPoi === waypoint} focused={selectedPoi === waypoint} />
 				)) : null}
 
 				{/* Start marker */}
@@ -303,7 +309,8 @@ export default function Index() {
 			<TrailheadBottomSheet
 				waypoints={visibleWaypoints}
 				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
-				onTrailheadPress={handleTrailheadPress}
+				onPoiSelected={handlePoiSelected}
+				onClearPoiSelection={handleClearPoiSelection}
 			/>
     </View>
   );

@@ -13,13 +13,15 @@ import TrailheadListItem from './TrailheadListItem';
 
 interface Props {
 	waypoints: Waypoint[];
-	onTrailheadPress: (waypoint: Waypoint) => void;
+	onPoiSelected: (waypoint: Waypoint) => void;
+	onClearPoiSelection: () => void;
 	partialOpenHeight: string | number;
 }
 
 export default function TrailheadBottomSheet({
 	waypoints,
-	onTrailheadPress,
+	onPoiSelected,
+	onClearPoiSelection,
 	partialOpenHeight,
 }: Props) {
 	const colors = useColors();
@@ -50,6 +52,7 @@ export default function TrailheadBottomSheet({
 
 	const handleCloseDetail = () => {
 		translateX.value = withTiming(width, { duration: 250 });
+		onClearPoiSelection();
 		setTimeout(() => {
 			setDetailItem(null);
 			if (currentSnapPoint === 2) setCurrentSnapPoint(1);
@@ -62,10 +65,10 @@ export default function TrailheadBottomSheet({
 			onPress={() => {
 				setCurrentSnapPoint(1); //reset to the partially open state
 				setDetailItem(item);
-				onTrailheadPress(item);
+				onPoiSelected(item);
 			}}
 		/>
-	), [onTrailheadPress]);
+	), [onPoiSelected]);
 
 	const renderEmptyMessage = () => (
 		<View style={styles.emptyContainer}>

@@ -13,6 +13,8 @@ import { View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
 import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 
+const BOTTOM_SHEET_PARTIAL_OPEN_PERCENT = 0.4;
+
 export default function Index() {
 	const mapRef = useRef<MapView>(null);
 	const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
@@ -115,14 +117,18 @@ export default function Index() {
 	}, [currentRegion, showMarkers]);
 
 	// Handle trailhead press from bottom sheet
+	// Offset the center so the marker appears in the visible area above the sheet
 	const handleTrailheadPress = useCallback((waypoint: Waypoint) => {
+		const latDelta = currentRegion?.latitudeDelta ?? 0.05;
+		const latOffset = (latDelta * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT) / 2;
+
 		mapRef.current?.animateToRegion({
-			latitude: waypoint.lat,
+			latitude: waypoint.lat - latOffset,
 			longitude: waypoint.lng,
-			latitudeDelta: 0.05,
-			longitudeDelta: 0.05,
+			latitudeDelta: latDelta,
+			longitudeDelta: currentRegion?.longitudeDelta ?? 0.05,
 		}, 500);
-	}, []);
+	}, [currentRegion]);
 
   return (
     <View style={{flex: 1}}>
@@ -296,6 +302,7 @@ export default function Index() {
 
 			<TrailheadBottomSheet
 				waypoints={visibleWaypoints}
+				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
 				onTrailheadPress={handleTrailheadPress}
 			/>
     </View>

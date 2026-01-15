@@ -5,6 +5,7 @@ import { Waypoint, ServiceProvider, TrailheadServices } from '@/constants/waypoi
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { Background } from '@react-navigation/elements';
 
 interface Props {
 	waypoint: Waypoint;
@@ -81,68 +82,68 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 
 	return (
 		<View style={styles.container}>
-			<BottomSheetScrollView style={styles.scrollView}>
-				<Animated.Image
-					source={imageSource}
-					style={[styles.bannerImage, imageAnimatedStyle]}
-					resizeMode="cover"
-				/>
+			<Animated.Image
+				source={imageSource}
+				style={[styles.bannerImage, imageAnimatedStyle]}
+				resizeMode="cover"
+			/>
 
-				<View style={styles.header}>
-					<View style={[styles.marker, { backgroundColor: colors.primary() }]}>
-						<AppText style={{ color: colors.surface() }}>TH</AppText>
-					</View>
-					<AppText style={styles.name}>{waypoint.name}</AppText>
+			<View style={styles.header}>
+				<View style={[styles.marker, { backgroundColor: colors.primary() }]}>
+					<AppText style={{ color: colors.surface() }}>TH</AppText>
 				</View>
+				<AppText style={styles.name}>{waypoint.name}</AppText>
+			</View>
 
-			<>
-				{availableServices.length > 0 && (
-					<View style={styles.section}>
-						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Services</AppText>
-						<View style={styles.servicesGrid}>
-							{availableServices.map((config) => {
-								const provider = waypoint.services?.[config.key] ?? null;
-								return (
-									<View key={config.key} style={[styles.serviceItem, { borderColor: colors.border() }]}>
-										<View style={styles.serviceIcon}>{config.icon}</View>
-										<View style={styles.serviceText}>
-											<AppText style={styles.serviceLabel}>{config.label}</AppText>
-											<AppText style={[styles.serviceProvider, { color: colors.text(0.5) }]}>
-												{getProviderLabel(provider)}
-											</AppText>
+			<BottomSheetScrollView style={styles.scrollView}>
+				<>
+					{availableServices.length > 0 && (
+						<View style={styles.section}>
+							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Services</AppText>
+							<View style={styles.servicesGrid}>
+								{availableServices.map((config) => {
+									const provider = waypoint.services?.[config.key] ?? null;
+									return (
+										<View key={config.key} style={[styles.serviceItem, { borderColor: colors.border() }]}>
+											<View style={styles.serviceIcon}>{config.icon}</View>
+											<View style={styles.serviceText}>
+												<AppText style={styles.serviceLabel}>{config.label}</AppText>
+												<AppText style={[styles.serviceProvider, { color: colors.text(0.5) }]}>
+													{getProviderLabel(provider)}
+												</AppText>
+											</View>
 										</View>
-									</View>
-								);
-							})}
+									);
+								})}
+							</View>
 						</View>
-					</View>
-				)}
+					)}
 
-				{waypoint.contact && (
-					<View style={styles.section}>
-						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
-						{waypoint.contact.name && (
-							<AppText style={styles.contactName}>{waypoint.contact.name}</AppText>
-						)}
-						{waypoint.contact.phone && (
-							<Pressable onPress={handlePhonePress}>
-								<AppText style={[styles.contactPhone, { color: colors.accent() }]}>
-									{waypoint.contact.phone}
-								</AppText>
-							</Pressable>
-						)}
-					</View>
-				)}
+					{waypoint.contact && (
+						<View style={styles.section}>
+							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
+							{waypoint.contact.name && (
+								<AppText style={styles.contactName}>{waypoint.contact.name}</AppText>
+							)}
+							{waypoint.contact.phone && (
+								<Pressable onPress={handlePhonePress}>
+									<AppText style={[styles.contactPhone, { color: colors.accent() }]}>
+										{waypoint.contact.phone}
+									</AppText>
+								</Pressable>
+							)}
+						</View>
+					)}
 
-				{waypoint.notes && (
-					<View style={styles.section}>
-						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Notes</AppText>
-						<AppText style={styles.notes}>{waypoint.notes}</AppText>
-					</View>
-				)}
-			</>
+					{waypoint.notes && (
+						<View style={styles.section}>
+							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Notes</AppText>
+							<AppText style={styles.notes}>{waypoint.notes}</AppText>
+						</View>
+					)}
+				</>
 			</BottomSheetScrollView>
-			<Pressable style={styles.closeButton} onPress={onClose} hitSlop={8}>
+			<Pressable style={[styles.closeButton, {backgroundColor: colors.surface(.5)}] } onPress={onClose} hitSlop={8}>
 				<Ionicons name="close" size={24} color={colors.text()} />
 			</Pressable>
 		</View>
@@ -161,6 +162,7 @@ const styles = StyleSheet.create({
 		top: 8,
 		right: 12,
 		padding: 4,
+		borderRadius: 20,
 	},
 	bannerImage: {
 		width: '100%',

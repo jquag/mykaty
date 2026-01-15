@@ -30,7 +30,7 @@ export default function TrailheadBottomSheet({
 	const colors = useColors();
 	const { width } = useWindowDimensions();
 
-	const snapPoints = useMemo(() => [55, partialOpenHeight, '95%'], [partialOpenHeight]);
+	const snapPoints = useMemo(() => [45, partialOpenHeight, '95%'], [partialOpenHeight]);
 	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(0);
 	const listRef = useRef<any>(null);
 
@@ -105,7 +105,7 @@ export default function TrailheadBottomSheet({
 				)}
 			</Animated.View>
 			{selectedPoi && (
-				<Animated.View style={[styles.detailOverlay, { backgroundColor: colors.surface() }, detailAnimatedStyle]}>
+				<Animated.View style={[styles.detailOverlay, {}, detailAnimatedStyle]}>
 					<TrailheadDetail
 						waypoint={selectedPoi}
 						animatedIndex={animatedIndex}

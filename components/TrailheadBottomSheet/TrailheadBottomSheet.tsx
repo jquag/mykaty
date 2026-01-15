@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, useWindowDimensions, Pressable } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -10,6 +10,7 @@ import { Waypoint } from '@/constants/waypoints';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
 import TrailheadListItem from './TrailheadListItem';
+import TrailheadDetail from './TrailheadDetail';
 
 interface Props {
 	waypoints: Waypoint[];
@@ -102,13 +103,12 @@ export default function TrailheadBottomSheet({
 				)}
 			</Animated.View>
 			{selectedPoi && (
-				<Animated.View style={[styles.detailOverlay, { backgroundColor: colors.surface(0) }, detailAnimatedStyle]}>
-					<View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 }}>
-						<AppText>{selectedPoi.name}</AppText>
-						<Pressable onPress={handleCloseDetail}>
-							<AppText>X</AppText>
-						</Pressable>
-					</View>
+				<Animated.View style={[styles.detailOverlay, { backgroundColor: colors.surface() }, detailAnimatedStyle]}>
+					<TrailheadDetail
+						waypoint={selectedPoi}
+						isExpanded={currentSnapPoint > 0}
+						onClose={handleCloseDetail}
+					/>
 				</Animated.View>
 			)}
 		</BottomSheet>

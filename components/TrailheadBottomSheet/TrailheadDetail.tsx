@@ -80,24 +80,20 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 	};
 
 	return (
-		<BottomSheetScrollView style={styles.container}>
-			<Animated.Image
-				source={imageSource}
-				style={[styles.bannerImage, imageAnimatedStyle]}
-				resizeMode="cover"
-			/>
+		<View style={styles.container}>
+			<BottomSheetScrollView style={styles.scrollView}>
+				<Animated.Image
+					source={imageSource}
+					style={[styles.bannerImage, imageAnimatedStyle]}
+					resizeMode="cover"
+				/>
 
-			<View style={styles.header}>
-				<View style={styles.headerLeft}>
+				<View style={styles.header}>
 					<View style={[styles.marker, { backgroundColor: colors.primary() }]}>
 						<AppText style={{ color: colors.surface() }}>TH</AppText>
 					</View>
 					<AppText style={styles.name}>{waypoint.name}</AppText>
 				</View>
-				<Pressable onPress={onClose} hitSlop={8}>
-					<Ionicons name="close" size={24} color={colors.text()} />
-				</Pressable>
-			</View>
 
 			<>
 				{availableServices.length > 0 && (
@@ -145,13 +141,26 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 					</View>
 				)}
 			</>
-		</BottomSheetScrollView>
+			</BottomSheetScrollView>
+			<Pressable style={styles.closeButton} onPress={onClose} hitSlop={8}>
+				<Ionicons name="close" size={24} color={colors.text()} />
+			</Pressable>
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
+	},
+	scrollView: {
+		flex: 1,
+	},
+	closeButton: {
+		position: 'absolute',
+		top: 8,
+		right: 12,
+		padding: 4,
 	},
 	bannerImage: {
 		width: '100%',
@@ -160,14 +169,9 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		justifyContent: 'space-between',
 		paddingHorizontal: 16,
 		paddingVertical: 12,
-	},
-	headerLeft: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		flex: 1,
+		paddingRight: 48,
 	},
 	marker: {
 		borderRadius: 6,

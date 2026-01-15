@@ -89,10 +89,13 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 			/>
 
 			<View style={styles.header}>
-				<View style={[styles.marker, { backgroundColor: colors.primary() }]}>
-					<AppText style={{ color: colors.surface() }}>TH</AppText>
+				{/* <View style={[styles.marker, { backgroundColor: colors.primary() }]}> */}
+				{/* 	<AppText style={{ color: colors.surface() }}>TH</AppText> */}
+				{/* </View> */}
+				<View>
+					<AppText style={styles.name}>{waypoint.name}</AppText>
+					<AppText style={{ color: colors.primary() }}>Trailhead</AppText>
 				</View>
-				<AppText style={styles.name}>{waypoint.name}</AppText>
 			</View>
 
 			<BottomSheetScrollView style={styles.scrollView}>
@@ -143,7 +146,7 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 					)}
 				</>
 			</BottomSheetScrollView>
-			<Pressable style={[styles.closeButton, {backgroundColor: colors.surface(.5)}] } onPress={onClose} hitSlop={8}>
+			<Pressable style={[styles.closeButton, { backgroundColor: colors.surface(.5) }]} onPress={onClose} hitSlop={8}>
 				<Ionicons name="close" size={24} color={colors.text()} />
 			</Pressable>
 		</View>
@@ -169,8 +172,6 @@ const styles = StyleSheet.create({
 		height: 150,
 	},
 	header: {
-		flexDirection: 'row',
-		alignItems: 'center',
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		paddingRight: 48,
@@ -181,9 +182,8 @@ const styles = StyleSheet.create({
 		padding: 4,
 	},
 	name: {
-		fontSize: 18,
+		fontSize: 24,
 		fontWeight: '700',
-		flex: 1,
 	},
 	section: {
 		paddingHorizontal: 16,

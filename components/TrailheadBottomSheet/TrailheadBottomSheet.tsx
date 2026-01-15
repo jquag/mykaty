@@ -85,8 +85,13 @@ export default function TrailheadBottomSheet({
 		<BottomSheet
 			index={currentSnapPoint}
 			snapPoints={snapPoints}
-			onChange={(i) => setCurrentSnapPoint(i)}
+			onChange={setCurrentSnapPoint}
 			animatedIndex={animatedIndex}
+			onAnimate={(_, to) => {
+				if (to === 0 && selectedPoi) {
+					onClearPoiSelection();
+				}
+			}}
 			backgroundStyle={{ backgroundColor: colors.surface(.9) }}
 			handleIndicatorStyle={{ backgroundColor: colors.secondary() }}
 			enableDynamicSizing={false}

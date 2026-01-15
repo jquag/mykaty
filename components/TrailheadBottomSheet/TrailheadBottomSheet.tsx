@@ -35,6 +35,7 @@ export default function TrailheadBottomSheet({
 	const listRef = useRef<any>(null);
 
 	const translateX = useSharedValue(width);
+	const animatedIndex = useSharedValue(0);
 
 	useEffect(() => {
 		if (selectedPoi) {
@@ -85,6 +86,7 @@ export default function TrailheadBottomSheet({
 			index={currentSnapPoint}
 			snapPoints={snapPoints}
 			onChange={(i) => setCurrentSnapPoint(i)}
+			animatedIndex={animatedIndex}
 			backgroundStyle={{ backgroundColor: colors.surface(.9) }}
 			handleIndicatorStyle={{ backgroundColor: colors.secondary() }}
 			enableDynamicSizing={false}
@@ -106,7 +108,7 @@ export default function TrailheadBottomSheet({
 				<Animated.View style={[styles.detailOverlay, { backgroundColor: colors.surface() }, detailAnimatedStyle]}>
 					<TrailheadDetail
 						waypoint={selectedPoi}
-						isExpanded={currentSnapPoint > 0}
+						animatedIndex={animatedIndex}
 						onClose={handleCloseDetail}
 					/>
 				</Animated.View>

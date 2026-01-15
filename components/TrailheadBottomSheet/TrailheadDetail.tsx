@@ -1,4 +1,5 @@
-import { View, StyleSheet, Image, Pressable, Linking } from 'react-native';
+import { View, StyleSheet, Pressable, Linking } from 'react-native';
+import Animated, { SharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Waypoint, ServiceProvider, TrailheadServices } from '@/constants/waypoints';
 import useColors from '@/hooks/use-colors';
@@ -7,7 +8,7 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 interface Props {
 	waypoint: Waypoint;
-	isExpanded: boolean;
+	animatedIndex: SharedValue<number>;
 	onClose: () => void;
 }
 
@@ -24,10 +25,27 @@ interface ServiceConfig {
 	icon: React.ReactNode;
 }
 
-export default function TrailheadDetail({ waypoint, isExpanded, onClose }: Props) {
+const IMAGE_HEIGHT = 150;
+
+export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Props) {
 	const colors = useColors();
 
 	const imageSource = trailheadImages[waypoint.image ?? 'generic'] ?? trailheadImages.generic;
+
+	const imageAnimatedStyle = useAnimatedStyle(() => ({
+		height: interpolate(
+			animatedIndex.value,
+			[1, 2],
+			[0, IMAGE_HEIGHT],
+			Extrapolation.CLAMP
+		),
+		opacity: interpolate(
+			animatedIndex.value,
+			[1, 1.5, 2],
+			[0, 0.5, 1],
+			Extrapolation.CLAMP
+		),
+	}));
 
 	const getServiceConfigs = (): ServiceConfig[] => [
 		{ key: 'parking', label: 'Parking', icon: <AppText style={{ fontSize: 16, fontWeight: '700', color: colors.secondary() }}>P</AppText> },
@@ -63,13 +81,11 @@ export default function TrailheadDetail({ waypoint, isExpanded, onClose }: Props
 
 	return (
 		<BottomSheetScrollView style={styles.container}>
-			{isExpanded && (
-				<Image
-					source={imageSource}
-					style={styles.bannerImage}
-					resizeMode="cover"
-				/>
-			)}
+			<Animated.Image
+				source={imageSource}
+				style={[styles.bannerImage, imageAnimatedStyle]}
+				resizeMode="cover"
+			/>
 
 			<View style={styles.header}>
 				<View style={styles.headerLeft}>
@@ -83,54 +99,52 @@ export default function TrailheadDetail({ waypoint, isExpanded, onClose }: Props
 				</Pressable>
 			</View>
 
-			{isExpanded && (
-				<>
-					{availableServices.length > 0 && (
-						<View style={styles.section}>
-							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Services</AppText>
-							<View style={styles.servicesGrid}>
-								{availableServices.map((config) => {
-									const provider = waypoint.services?.[config.key] ?? null;
-									return (
-										<View key={config.key} style={[styles.serviceItem, { borderColor: colors.border() }]}>
-											<View style={styles.serviceIcon}>{config.icon}</View>
-											<View style={styles.serviceText}>
-												<AppText style={styles.serviceLabel}>{config.label}</AppText>
-												<AppText style={[styles.serviceProvider, { color: colors.text(0.5) }]}>
-													{getProviderLabel(provider)}
-												</AppText>
-											</View>
+			<>
+				{availableServices.length > 0 && (
+					<View style={styles.section}>
+						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Services</AppText>
+						<View style={styles.servicesGrid}>
+							{availableServices.map((config) => {
+								const provider = waypoint.services?.[config.key] ?? null;
+								return (
+									<View key={config.key} style={[styles.serviceItem, { borderColor: colors.border() }]}>
+										<View style={styles.serviceIcon}>{config.icon}</View>
+										<View style={styles.serviceText}>
+											<AppText style={styles.serviceLabel}>{config.label}</AppText>
+											<AppText style={[styles.serviceProvider, { color: colors.text(0.5) }]}>
+												{getProviderLabel(provider)}
+											</AppText>
 										</View>
-									);
-								})}
-							</View>
+									</View>
+								);
+							})}
 						</View>
-					)}
+					</View>
+				)}
 
-					{waypoint.contact && (
-						<View style={styles.section}>
-							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
-							{waypoint.contact.name && (
-								<AppText style={styles.contactName}>{waypoint.contact.name}</AppText>
-							)}
-							{waypoint.contact.phone && (
-								<Pressable onPress={handlePhonePress}>
-									<AppText style={[styles.contactPhone, { color: colors.accent() }]}>
-										{waypoint.contact.phone}
-									</AppText>
-								</Pressable>
-							)}
-						</View>
-					)}
+				{waypoint.contact && (
+					<View style={styles.section}>
+						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
+						{waypoint.contact.name && (
+							<AppText style={styles.contactName}>{waypoint.contact.name}</AppText>
+						)}
+						{waypoint.contact.phone && (
+							<Pressable onPress={handlePhonePress}>
+								<AppText style={[styles.contactPhone, { color: colors.accent() }]}>
+									{waypoint.contact.phone}
+								</AppText>
+							</Pressable>
+						)}
+					</View>
+				)}
 
-					{waypoint.notes && (
-						<View style={styles.section}>
-							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Notes</AppText>
-							<AppText style={styles.notes}>{waypoint.notes}</AppText>
-						</View>
-					)}
-				</>
-			)}
+				{waypoint.notes && (
+					<View style={styles.section}>
+						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Notes</AppText>
+						<AppText style={styles.notes}>{waypoint.notes}</AppText>
+					</View>
+				)}
+			</>
 		</BottomSheetScrollView>
 	);
 }

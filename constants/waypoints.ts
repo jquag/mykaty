@@ -64,7 +64,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.87370,
     lng: -90.37178,
     name: "Black Walnut",
-    image: "generic",
+    image: "blackWalnut",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -85,7 +85,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.77313,
     lng: -90.48389,
     name: "St. Charles",
-    image: "generic",
+    image: "saintCharles",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -110,7 +110,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.71562,
     lng: -90.56697,
     name: "Greens Bottom",
-    image: "generic",
+    image: "greensbottom",
     services: {
       foodGrocery: "community",
       restaurant: "community",

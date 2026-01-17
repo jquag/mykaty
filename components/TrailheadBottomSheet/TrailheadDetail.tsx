@@ -5,7 +5,6 @@ import { Waypoint, ServiceProvider, TrailheadServices } from '@/constants/waypoi
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { Background } from '@react-navigation/elements';
 
 interface Props {
 	waypoint: Waypoint;
@@ -16,6 +15,9 @@ interface Props {
 const trailheadImages: Record<string, any> = {
 	machens: require('@/assets/images/trailheads/machens.jpg'),
 	generic: require('@/assets/images/trailheads/generic.jpg'),
+	blackWalnut: require('@/assets/images/trailheads/black-walnut.jpg'),
+	saintCharles: require('@/assets/images/trailheads/saint-charles.jpg'),
+	greensbottom: require('@/assets/images/trailheads/greensbottom.jpg'),
 };
 
 type ServiceKey = keyof TrailheadServices;

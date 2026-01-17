@@ -1,6 +1,7 @@
 import MeasureMarker from "@/components/MeasureMarker";
 import TrailheadMarker from "@/components/TrailheadMarker";
 import TrailheadBottomSheet from "@/components/TrailheadBottomSheet/TrailheadBottomSheet";
+import TrailheadDetailBottomSheet from "@/components/TrailheadBottomSheet/TrailheadDetailBottomSheet";
 import AppText from "@/components/ui/AppText";
 import { trailPoints } from "@/constants/trailPoints";
 import { Waypoint, waypoints } from "@/constants/waypoints";
@@ -308,11 +309,16 @@ export default function Index() {
 
 			<TrailheadBottomSheet
 				waypoints={visibleWaypoints}
-				selectedPoi={selectedPoi}
 				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
 				onPoiSelected={handlePoiSelected}
-				onClearPoiSelection={handleClearPoiSelection}
 			/>
+			{selectedPoi && (
+				<TrailheadDetailBottomSheet
+					waypoint={selectedPoi}
+					partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
+					onClose={handleClearPoiSelection}
+				/>
+			)}
     </View>
   );
 }

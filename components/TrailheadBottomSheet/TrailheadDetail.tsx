@@ -36,13 +36,13 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 	const imageAnimatedStyle = useAnimatedStyle(() => ({
 		height: interpolate(
 			animatedIndex.value,
-			[1, 2],
+			[0, 1],
 			[0, IMAGE_HEIGHT],
 			Extrapolation.CLAMP
 		),
 		opacity: interpolate(
 			animatedIndex.value,
-			[1, 1.5, 2],
+			[0, 0.5, 1],
 			[0, 0.5, 1],
 			Extrapolation.CLAMP
 		),

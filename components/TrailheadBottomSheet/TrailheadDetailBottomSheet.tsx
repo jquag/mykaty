@@ -34,7 +34,7 @@ export default function TrailheadDetailBottomSheet({
 			animatedIndex={animatedIndex}
 			enablePanDownToClose
 			onClose={onClose}
-			backgroundStyle={{ backgroundColor: colors.surface(.9) }}
+			backgroundStyle={{ backgroundColor: colors.surface() }}
 			handleIndicatorStyle={{ backgroundColor: colors.secondary() }}
 			enableDynamicSizing={false}
 		>

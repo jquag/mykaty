@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { Waypoint } from '@/constants/waypoints';
@@ -12,11 +12,11 @@ interface Props {
 	partialOpenHeight: string | number;
 }
 
-export default function TrailheadBottomSheet({
+const TrailheadBottomSheet = forwardRef<BottomSheet, Props>(({
 	waypoints,
 	onPoiSelected,
 	partialOpenHeight,
-}: Props) {
+}, ref) => {
 	const colors = useColors();
 
 	const snapPoints = useMemo(() => [45, partialOpenHeight, '95%'], [partialOpenHeight]);
@@ -42,6 +42,7 @@ export default function TrailheadBottomSheet({
 
 	return (
 		<BottomSheet
+			ref={ref}
 			index={currentSnapPoint}
 			snapPoints={snapPoints}
 			onChange={setCurrentSnapPoint}
@@ -64,7 +65,11 @@ export default function TrailheadBottomSheet({
 			</View>
 		</BottomSheet>
 	);
-}
+});
+
+TrailheadBottomSheet.displayName = 'TrailheadBottomSheet';
+
+export default TrailheadBottomSheet;
 
 const styles = StyleSheet.create({
 	listContainer: {

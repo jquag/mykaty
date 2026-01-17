@@ -9,6 +9,7 @@ import useColors from "@/hooks/use-colors";
 import { getTrailRegion } from "@/utils/trail";
 import { calculateTrailDistance } from "@/utils/map";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
@@ -18,6 +19,7 @@ const BOTTOM_SHEET_PARTIAL_OPEN_PERCENT = 0.4;
 
 export default function Index() {
 	const mapRef = useRef<MapView>(null);
+	const listSheetRef = useRef<BottomSheet>(null);
 	const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
 	const colors = useColors();
 	const [selectedPoi, setSelectedPoi] = useState<Waypoint | null>(null);
@@ -122,6 +124,8 @@ export default function Index() {
 	// Offset the center so the marker appears in the visible area above the sheet
 	const handlePoiSelected = useCallback((waypoint: Waypoint) => {
 		setSelectedPoi(waypoint);
+		listSheetRef.current?.snapToIndex(0); // Minimize list sheet
+
 		const latDelta = currentRegion?.latitudeDelta ?? 0.05;
 		const latOffset = (latDelta * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT) / 2;
 
@@ -308,7 +312,8 @@ export default function Index() {
 			)}
 
 			<TrailheadBottomSheet
-				waypoints={visibleWaypoints}
+				ref={listSheetRef}
+				waypoints={selectedPoi ? [] : visibleWaypoints}
 				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
 				onPoiSelected={handlePoiSelected}
 			/>

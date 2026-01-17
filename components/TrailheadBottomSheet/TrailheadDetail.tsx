@@ -65,7 +65,7 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 	];
 
 	const getProviderLabel = (provider: ServiceProvider): string => {
-		if (provider === 'state') return 'State';
+		if (provider === 'state') return 'Katy Trail State Parks';
 		if (provider === 'community') return 'Community';
 		return '';
 	};
@@ -89,9 +89,6 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 			/>
 
 			<View style={styles.header}>
-				{/* <View style={[styles.marker, { backgroundColor: colors.primary() }]}> */}
-				{/* 	<AppText style={{ color: colors.surface() }}>TH</AppText> */}
-				{/* </View> */}
 				<View>
 					<AppText style={styles.name}>{waypoint.name}</AppText>
 					<AppText style={{ color: colors.primary() }}>Trailhead</AppText>
@@ -108,7 +105,7 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 									const provider = waypoint.services?.[config.key] ?? null;
 									return (
 										<View key={config.key} style={[styles.serviceItem, { borderColor: colors.border() }]}>
-											<View style={styles.serviceIcon}>{config.icon}</View>
+											<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>{config.icon}</View>
 											<View style={styles.serviceText}>
 												<AppText style={styles.serviceLabel}>{config.label}</AppText>
 												<AppText style={[styles.serviceProvider, { color: colors.text(0.5) }]}>
@@ -122,21 +119,25 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 						</View>
 					)}
 
-					{waypoint.contact && (
-						<View style={styles.section}>
-							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
-							{waypoint.contact.name && (
-								<AppText style={styles.contactName}>{waypoint.contact.name}</AppText>
-							)}
-							{waypoint.contact.phone && (
-								<Pressable onPress={handlePhonePress}>
-									<AppText style={[styles.contactPhone, { color: colors.accent() }]}>
-										{waypoint.contact.phone}
-									</AppText>
-								</Pressable>
-							)}
-						</View>
-					)}
+					<View style={styles.section}>
+						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
+						{waypoint.contact ? (
+							<>
+								{waypoint.contact.name && (
+									<AppText style={styles.contactName}>{waypoint.contact.name}</AppText>
+								)}
+								{waypoint.contact.phone && (
+									<Pressable onPress={handlePhonePress}>
+										<AppText style={[styles.contactPhone, { color: colors.accent() }]}>
+											{waypoint.contact.phone}
+										</AppText>
+									</Pressable>
+								)}
+							</>
+						) : (
+							<AppText style={{ color: colors.text(), fontSize: 12 }}>Not available</AppText>
+						)}
+					</View>
 
 					{waypoint.notes && (
 						<View style={styles.section}>
@@ -204,14 +205,14 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		width: '48%',
+	},
+	serviceIcon: {
+		width: 40,
+		alignItems: 'center',
 		paddingVertical: 8,
 		paddingHorizontal: 10,
 		borderWidth: 1,
 		borderRadius: 8,
-	},
-	serviceIcon: {
-		width: 24,
-		alignItems: 'center',
 	},
 	serviceText: {
 		marginLeft: 8,

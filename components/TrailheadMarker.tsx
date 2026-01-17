@@ -6,22 +6,26 @@ import useColors from "@/hooks/use-colors";
 
 interface Props {
 	waypoint: Waypoint;
-	markerSize: number;
 	showLabels?: boolean;
+	focused?: boolean;
+	onPress?: () => void;
 }
 
-export default function TrailheadMarker({ waypoint, markerSize, showLabels = true }: Props) {
+export default function TrailheadMarker({ waypoint, showLabels = true, focused = false, onPress }: Props) {
 	const colors = useColors();
+	const markerSize = focused ? 24 : 14;
 	return (
 		<Marker
+			key={`${waypoint.lat}-${waypoint.lng}-${focused}`}
 			coordinate={{ latitude: waypoint.lat, longitude: waypoint.lng }}
-			title={waypoint.name}
 			anchor={{ x: 0.5, y: 0.5 }}
+			tracksViewChanges={true}
+			onPress={onPress}
 		>
-			<View style={{}}>
+			<View style={{ width: markerSize, height: markerSize }}>
 				<View style={{
-					borderWidth: 1,
-					borderColor: colors.border(),
+					borderWidth: focused ? 3 : 1,
+					borderColor: focused ? colors.accent() : colors.border(),
 					backgroundColor: colors.primary(),
 					width: markerSize,
 					height: markerSize,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { Waypoint } from '@/constants/waypoints';
@@ -8,29 +8,29 @@ import TrailheadListItem from './TrailheadListItem';
 
 interface Props {
 	waypoints: Waypoint[];
-	onTrailheadPress: (waypoint: Waypoint) => void;
+	onPoiSelected: (waypoint: Waypoint) => void;
 	partialOpenHeight: string | number;
 }
 
-export default function TrailheadBottomSheet({
+const TrailheadBottomSheet = forwardRef<BottomSheet, Props>(({
 	waypoints,
-	onTrailheadPress,
+	onPoiSelected,
 	partialOpenHeight,
-}: Props) {
+}, ref) => {
 	const colors = useColors();
 
-	const snapPoints = useMemo(() => [35, partialOpenHeight, '95%'], [partialOpenHeight]);
+	const snapPoints = useMemo(() => [45, partialOpenHeight, '95%'], [partialOpenHeight]);
 	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(0);
+	const listRef = useRef<any>(null);
 
 	const renderItem = useCallback(({ item }: { item: Waypoint }) => (
 		<TrailheadListItem
 			waypoint={item}
 			onPress={() => {
-				setCurrentSnapPoint(1); //reset to the partially open state
-				onTrailheadPress(item);
+				onPoiSelected(item);
 			}}
-    />
-	), [onTrailheadPress]);
+		/>
+	), [onPoiSelected]);
 
 	const renderEmptyMessage = () => (
 		<View style={styles.emptyContainer}>
@@ -42,36 +42,41 @@ export default function TrailheadBottomSheet({
 
 	return (
 		<BottomSheet
+			ref={ref}
 			index={currentSnapPoint}
 			snapPoints={snapPoints}
-			onChange={(i) => setCurrentSnapPoint(i)}
+			onChange={setCurrentSnapPoint}
 			backgroundStyle={{ backgroundColor: colors.surface(.9) }}
 			handleIndicatorStyle={{ backgroundColor: colors.secondary() }}
+			enableDynamicSizing={false}
 		>
-			{waypoints.length > 0 ? (
-				<BottomSheetFlatList
-					data={waypoints}
-					keyExtractor={(item: Waypoint) => `${item.lat}-${item.lng}`}
-					renderItem={renderItem}
-					contentContainerStyle={styles.listContent}
-				/>
-			) : (
-				renderEmptyMessage()
-			)}
+			<View style={styles.listContainer}>
+				{waypoints.length > 0 ? (
+					<BottomSheetFlatList
+						ref={listRef}
+						data={waypoints}
+						keyExtractor={(item: Waypoint) => `${item.lat}-${item.lng}`}
+						renderItem={renderItem}
+						contentContainerStyle={styles.listContent}
+					/>
+				) : (
+					renderEmptyMessage()
+				)}
+			</View>
 		</BottomSheet>
 	);
-}
+});
+
+TrailheadBottomSheet.displayName = 'TrailheadBottomSheet';
+
+export default TrailheadBottomSheet;
 
 const styles = StyleSheet.create({
-	header: {
-		paddingHorizontal: 16,
-		paddingBottom: 8,
-	},
-	headerText: {
-		fontSize: 18,
-		fontWeight: '700',
+	listContainer: {
+		flex: 1,
 	},
 	listContent: {
+		marginTop: 16,
 		paddingHorizontal: 16,
 		paddingBottom: 100,
 	},

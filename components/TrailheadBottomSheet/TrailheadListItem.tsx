@@ -28,7 +28,7 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 				}
 			]}
 		>
-			<View style={[styles.marker, { backgroundColor: colors.primary() }]}>
+			<View style={[styles.marker, { backgroundColor: colors.primary(.6) }]}>
 				<AppText style={{
 					color: colors.surface(),
 				}}>TH</AppText>
@@ -61,11 +61,6 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 						/>
 					</View>
 				</View>
-				{waypoint.notes && (
-					<AppText style={[styles.notes, { color: colors.text(0.6) }]} numberOfLines={1}>
-						{waypoint.notes}
-					</AppText>
-				)}
 			</View>
 			<Ionicons
 				name="chevron-forward"
@@ -79,7 +74,8 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 const styles = StyleSheet.create({
 	container: {
 		flexDirection: 'row',
-		alignItems: 'center',
+		alignItems: 'flex-start',
+		gap: 10,
 		paddingVertical: 12,
 		paddingHorizontal: 4,
 		borderBottomWidth: 1,
@@ -93,8 +89,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	name: {
-		fontSize: 16,
+		fontSize: 18,
 		fontWeight: '600',
+		marginBottom: 4,
 	},
 	services: {
 		flexDirection: 'row',

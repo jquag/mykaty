@@ -40,7 +40,15 @@
           }
         }
       ],
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Fraunces-Regular.ttf",
+            "./assets/fonts/Fraunces-Bold.ttf"
+          ]
+        }
+      ],
       "expo-web-browser"
     ],
     "experiments": {

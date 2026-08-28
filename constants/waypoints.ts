@@ -131,7 +131,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.66023,
     lng: -90.74395,
     name: "Weldon Spring",
-    image: "generic",
+    image: "weldonSpring",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -152,7 +152,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.62991,
     lng: -90.77970,
     name: "Defiance",
-    image: "generic",
+    image: "defiance",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -177,7 +177,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.60863,
     lng: -90.79485,
     name: "Matson",
-    image: "generic",
+    image: "matson",
     services: {
       foodGrocery: null,
       restaurant: "community",
@@ -203,7 +203,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.56990,
     lng: -90.88107,
     name: "Augusta",
-    image: "generic",
+    image: "augusta",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -228,7 +228,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.60287,
     lng: -90.99919,
     name: "Dutzow",
-    image: "generic",
+    image: "dutzow",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -249,7 +249,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.62718,
     lng: -91.06079,
     name: "Marthasville",
-    image: "generic",
+    image: "marthasville",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -274,7 +274,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.64332,
     lng: -91.18792,
     name: "Treloar",
-    image: "generic",
+    image: "treloar",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -295,7 +295,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.73393,
     lng: -91.44438,
     name: "McKittrick",
-    image: "generic",
+    image: "mcKittrick",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -316,7 +316,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.71904,
     lng: -91.51598,
     name: "Rhineland",
-    image: "generic",
+    image: "rhineland",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -337,7 +337,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.70563,
     lng: -91.62286,
     name: "Bluffton",
-    image: "generic",
+    image: "bluffton",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -358,7 +358,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.70961,
     lng: -91.71667,
     name: "Portland",
-    image: "generic",
+    image: "portland",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -383,7 +383,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.70373,
     lng: -91.81646,
     name: "Steedman",
-    image: "generic",
+    image: "steedman",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -408,7 +408,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.67472,
     lng: -91.87063,
     name: "Mokane",
-    image: "generic",
+    image: "mokane",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -433,7 +433,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.62103,
     lng: -91.95904,
     name: "Tebbetts",
-    image: "generic",
+    image: "tebbetts",
     services: {
       foodGrocery: null,
       restaurant: "community",
@@ -458,7 +458,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.60592,
     lng: -92.16225,
     name: "North Jefferson",
-    image: "generic",
+    image: "northJefferson",
     services: {
       foodGrocery: "community",
       restaurant: "community",

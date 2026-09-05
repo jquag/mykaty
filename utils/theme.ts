@@ -1,6 +1,6 @@
 export const Fonts = {
-	heading: 'Fraunces_700Bold',
-	headingRegular: 'Fraunces_400Regular',
+	heading: 'Fraunces-Bold',
+	headingRegular: 'Fraunces-Regular',
 };
 
 export const Colors = {

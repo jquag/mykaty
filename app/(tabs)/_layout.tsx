@@ -1,13 +1,19 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ImageBackground, View, StyleSheet, useColorScheme } from 'react-native';
+import { Pressable, ImageBackground, View, StyleSheet, useColorScheme, GestureResponderEvent } from 'react-native';
 import { Fonts } from '@/utils/theme';
 import useColors from '@/hooks/use-colors';
-import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
+import type { ReactNode } from 'react';
 
-const TabBarButton = (props: BottomTabBarButtonProps) => {
-	const { children, onPress, style } = props;
-	const focused = (props as any)['aria-selected'];
+type TabBarButtonProps = {
+	children?: ReactNode;
+	onPress?: (e: GestureResponderEvent) => void;
+	'aria-selected'?: boolean;
+};
+
+const TabBarButton = (props: TabBarButtonProps) => {
+	const { children, onPress } = props;
+	const focused = props['aria-selected'];
 	const colors = useColors();
 	const colorScheme = useColorScheme();
 

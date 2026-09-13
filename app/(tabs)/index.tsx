@@ -255,59 +255,64 @@ export default function Index() {
 				}}
 			>
 				<Ionicons name="locate" size={18} color={colors.text()} />
-				<AppText>Trail</AppText>
+				{!measureMode && <AppText>Trail</AppText>}
 			</Pressable>
 
 			{/* Distance button */}
-			<Pressable
-				onPress={toggleMeasureMode}
-				style={{
-					position: 'absolute',
-					top: 60,
-					right: 16,
-					backgroundColor: measureMode ? colors.accent(0.9) : colors.surface(.7),
-					borderRadius: 8,
-					padding: 8,
-					flexDirection: 'row',
-					alignItems: 'center',
-					gap: 6,
-				}}
-			>
-				<MaterialCommunityIcons
-					name="ruler"
-					size={18}
-					color={measureMode ? colors.surface() : colors.text()}
-				/>
-				<AppText style={{ color: measureMode ? colors.surface() : colors.text() }}>
-					{measureMode ? 'Cancel' : 'Distance'}
-				</AppText>
-			</Pressable>
-
-			{/* Instructions overlay */}
-			{measureMode && measuredDistance === null && (
-				<View style={[styles.instructionsOverlay, { backgroundColor: colors.surface(0.9) }]}>
-					<MaterialCommunityIcons name="gesture-tap" size={20} color={colors.primary()} />
-					<AppText style={{ marginLeft: 8 }}>
-						{measurementPoints.start === null
-							? 'Tap the START point on the trail'
-							: 'Tap the END point on the trail'}
-					</AppText>
-				</View>
+			{!measureMode && (
+				<Pressable
+					onPress={toggleMeasureMode}
+					style={{
+						position: 'absolute',
+						top: 60,
+						right: 16,
+						backgroundColor: colors.surface(.7),
+						borderRadius: 8,
+						padding: 8,
+						flexDirection: 'row',
+						alignItems: 'center',
+						gap: 6,
+					}}
+				>
+					<MaterialCommunityIcons name="ruler" size={18} color={colors.text()} />
+					<AppText>Distance</AppText>
+				</Pressable>
 			)}
 
-			{/* Distance display */}
-			{measuredDistance !== null && (
-				<View style={[styles.distanceDisplay, { backgroundColor: colors.surface(0.95) }]}>
-					<View style={styles.distanceRow}>
-						<MaterialCommunityIcons name="map-marker-distance" size={24} color={colors.primary()} />
-						<AppText style={styles.distanceText}>{measuredDistance.toFixed(2)} miles</AppText>
+			{/* Measure overlay */}
+			{measureMode && (
+				<View style={[styles.measureOverlay, { backgroundColor: colors.surface(0.9) }]}>
+					<View style={styles.measureHeader}>
+						<View style={styles.measureRow}>
+							<MaterialCommunityIcons name="ruler" size={18} color={colors.primary()} />
+							<AppText style={styles.measureTitle}>Distance</AppText>
+						</View>
+						<Pressable
+							onPress={measuredDistance === null ? toggleMeasureMode : clearMeasurement}
+							style={[styles.clearButton, { backgroundColor: colors.accent() }]}
+						>
+							<AppText style={{ color: colors.surface() }}>
+								{measuredDistance === null ? 'Cancel' : 'Clear'}
+							</AppText>
+						</Pressable>
 					</View>
-					<Pressable
-						onPress={clearMeasurement}
-						style={[styles.clearButton, { backgroundColor: colors.accent() }]}
-					>
-						<AppText style={{ color: colors.surface() }}>Clear</AppText>
-					</Pressable>
+					<View style={styles.measureRow}>
+						{measuredDistance === null ? (
+							<>
+								<MaterialCommunityIcons name="gesture-tap" size={20} color={colors.primary()} />
+								<AppText style={{ flexShrink: 1 }}>
+									{measurementPoints.start === null
+										? 'Tap the START point'
+										: 'Tap the END point'}
+								</AppText>
+							</>
+						) : (
+							<>
+								<MaterialCommunityIcons name="map-marker-distance" size={20} color={colors.primary()} />
+								<AppText style={styles.distanceText}>{measuredDistance.toFixed(2)} miles</AppText>
+							</>
+						)}
+					</View>
 				</View>
 			)}
 
@@ -329,40 +334,36 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-	instructionsOverlay: {
+	measureOverlay: {
 		position: 'absolute',
-		bottom: 30,
+		top: 20,
 		left: 16,
-		right: 16,
+		right: 58,
 		padding: 12,
 		borderRadius: 12,
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
+		gap: 10,
 	},
-	distanceDisplay: {
-		position: 'absolute',
-		bottom: 30,
-		left: 16,
-		right: 16,
-		padding: 16,
-		borderRadius: 12,
+	measureHeader: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
 	},
-	distanceRow: {
+	measureRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 8,
+		flexShrink: 1,
+	},
+	measureTitle: {
+		fontWeight: 'bold',
 	},
 	distanceText: {
 		fontSize: 20,
 		fontWeight: 'bold',
 	},
 	clearButton: {
-		paddingHorizontal: 16,
-		paddingVertical: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 6,
 		borderRadius: 8,
 	},
 });

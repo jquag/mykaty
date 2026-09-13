@@ -180,7 +180,7 @@ export default function Index() {
 				)}
 
 				{showMarkers && (!measureMode || showLabels) ? waypoints.map((waypoint, index) => (
-					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedPoi === waypoint} focused={selectedPoi === waypoint} onPress={() => handlePoiSelected(waypoint)} />
+					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedPoi === waypoint} focused={selectedPoi === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => handlePoiSelected(waypoint)} />
 				)) : null}
 
 				{/* Start marker */}

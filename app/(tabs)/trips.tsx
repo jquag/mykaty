@@ -45,7 +45,7 @@ export default function Trips() {
 					<MaterialCommunityIcons name="map-marker-path" size={48} color={colors.primary(0.6)} />
 					<AppText style={styles.emptyTitle}>No trips yet</AppText>
 					<AppText style={{ color: colors.text(0.6), textAlign: 'center' }}>
-						Pick a start and end on the trail to plan your first trip.
+						Plan your first trip now
 					</AppText>
 					<Pressable
 						onPress={() => router.push('/new-trip')}

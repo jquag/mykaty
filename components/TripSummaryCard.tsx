@@ -29,7 +29,7 @@ export default function TripSummaryCard({ startIndex, endIndex, isRoundTrip }: P
 				<MaterialCommunityIcons name="map-marker-distance" size={18} color={colors.primary()} />
 				<AppText>
 					{isRoundTrip
-						? `${(oneWayMiles * 2).toFixed(1)} mi round trip (${oneWayMiles.toFixed(1)} mi each way)`
+						? `${(oneWayMiles * 2).toFixed(1)} mi round trip`
 						: `${oneWayMiles.toFixed(1)} mi`}
 				</AppText>
 			</View>

@@ -11,11 +11,13 @@ import { calculateTrailDistance } from "@/utils/map";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { PixelRatio, Platform, View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
 import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 
 const BOTTOM_SHEET_PARTIAL_OPEN_PERCENT = 0.4;
+const BOTTOM_SHEET_COLLAPSED_HEIGHT = 45;
+const MEASURE_FIT_MARGIN = 40;
 
 export default function Index() {
 	const mapRef = useRef<MapView>(null);
@@ -31,6 +33,7 @@ export default function Index() {
 		end: number | null;
 	}>({ start: null, end: null });
 	const [markerKeys, setMarkerKeys] = useState({ start: 0, end: 0 });
+	const [measureOverlayBottom, setMeasureOverlayBottom] = useState(0);
 
 	// Find the nearest trail point to a given coordinate
 	const findNearestTrailPoint = useCallback((clickLat: number, clickLng: number): number => {
@@ -87,6 +90,29 @@ export default function Index() {
 		if (measurementPoints.start === null || measurementPoints.end === null) return null;
 		return calculateTrailDistance(trailPoints, measurementPoints.start, measurementPoints.end);
 	}, [measurementPoints.start, measurementPoints.end]);
+
+	// Zoom to fit the measured segment between the overlay and the collapsed bottom sheet
+	const fitToMeasurement = useCallback(() => {
+		if (measurementPoints.start === null || measurementPoints.end === null) return;
+		listSheetRef.current?.snapToIndex(0);
+
+		const coordinates = trailPoints.slice(
+			Math.min(measurementPoints.start, measurementPoints.end),
+			Math.max(measurementPoints.start, measurementPoints.end) + 1
+		).map(point => ({ latitude: point.lat, longitude: point.lng }));
+
+		// Android expects edge padding in pixels, iOS in points
+		const scale = Platform.OS === 'android' ? PixelRatio.get() : 1;
+		mapRef.current?.fitToCoordinates(coordinates, {
+			edgePadding: {
+				top: (measureOverlayBottom + MEASURE_FIT_MARGIN) * scale,
+				right: MEASURE_FIT_MARGIN * scale,
+				bottom: (BOTTOM_SHEET_COLLAPSED_HEIGHT + MEASURE_FIT_MARGIN) * scale,
+				left: MEASURE_FIT_MARGIN * scale,
+			},
+			animated: true,
+		});
+	}, [measurementPoints.start, measurementPoints.end, measureOverlayBottom]);
 
 	// Toggle measure mode
 	const toggleMeasureMode = useCallback(() => {
@@ -281,7 +307,10 @@ export default function Index() {
 
 			{/* Measure overlay */}
 			{measureMode && (
-				<View style={[styles.measureOverlay, { backgroundColor: colors.surface(0.9) }]}>
+				<View
+					style={[styles.measureOverlay, { backgroundColor: colors.surface(0.9) }]}
+					onLayout={(e) => setMeasureOverlayBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
+				>
 					<View style={styles.measureHeader}>
 						<View style={styles.measureRow}>
 							<MaterialCommunityIcons name="ruler" size={18} color={colors.primary()} />
@@ -309,7 +338,10 @@ export default function Index() {
 						) : (
 							<>
 								<MaterialCommunityIcons name="map-marker-distance" size={20} color={colors.primary()} />
-								<AppText style={styles.distanceText}>{measuredDistance.toFixed(2)} miles</AppText>
+								<AppText style={[styles.distanceText, { flex: 1 }]}>{measuredDistance.toFixed(2)} miles</AppText>
+								<Pressable onPress={fitToMeasurement} hitSlop={8} accessibilityLabel="Center on measured segment">
+									<Ionicons name="locate" size={24} color={colors.primary()} />
+								</Pressable>
 							</>
 						)}
 					</View>

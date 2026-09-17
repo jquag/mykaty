@@ -1,17 +1,19 @@
-import MeasureMarker from "@/components/MeasureMarker";
+import SegmentStatusCard from "@/components/SegmentStatusCard";
 import TrailheadMarker from "@/components/TrailheadMarker";
 import TrailheadBottomSheet from "@/components/TrailheadBottomSheet/TrailheadBottomSheet";
 import TrailheadDetailBottomSheet from "@/components/TrailheadBottomSheet/TrailheadDetailBottomSheet";
+import TrailSegmentLayer from "@/components/TrailSegmentLayer";
 import AppText from "@/components/ui/AppText";
-import { trailPoints } from "@/constants/trailPoints";
 import { Waypoint, waypoints } from "@/constants/waypoints";
 import useColors from "@/hooks/use-colors";
-import { getTrailRegion } from "@/utils/trail";
-import { calculateTrailDistance } from "@/utils/map";
+import useTrailSegment from "@/hooks/use-trail-segment";
+import { fitMapToCoordinates } from "@/utils/map";
+import { getMapDetailLevel, getSegmentCoordinates, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomSheet from "@gorhom/bottom-sheet";
+import { useRouter } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { PixelRatio, Platform, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
 import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 
@@ -20,6 +22,7 @@ const BOTTOM_SHEET_COLLAPSED_HEIGHT = 45;
 const MEASURE_FIT_MARGIN = 40;
 
 export default function Index() {
+	const router = useRouter();
 	const mapRef = useRef<MapView>(null);
 	const listSheetRef = useRef<BottomSheet>(null);
 	const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
@@ -28,112 +31,41 @@ export default function Index() {
 
 	// Distance measuring state
 	const [measureMode, setMeasureMode] = useState(false);
-	const [measurementPoints, setMeasurementPoints] = useState<{
-		start: number | null;
-		end: number | null;
-	}>({ start: null, end: null });
-	const [markerKeys, setMarkerKeys] = useState({ start: 0, end: 0 });
+	const segment = useTrailSegment();
 	const [measureOverlayBottom, setMeasureOverlayBottom] = useState(0);
 
-	// Find the nearest trail point to a given coordinate
-	const findNearestTrailPoint = useCallback((clickLat: number, clickLng: number): number => {
-		// First check if click is near a waypoint (within ~100 meters)
-		const waypointThreshold = 0.001;
-		for (const waypoint of waypoints) {
-			const latDiff = Math.abs(waypoint.lat - clickLat);
-			const lngDiff = Math.abs(waypoint.lng - clickLng);
-			if (latDiff < waypointThreshold && lngDiff < waypointThreshold) {
-				// Find the closest trail point index to this waypoint
-				let closestIndex = 0;
-				let closestDistance = Infinity;
-				for (let j = 0; j < trailPoints.length; j++) {
-					const dist = Math.abs(trailPoints[j].lat - waypoint.lat) +
-						Math.abs(trailPoints[j].lng - waypoint.lng);
-					if (dist < closestDistance) {
-						closestDistance = dist;
-						closestIndex = j;
-					}
-				}
-				return closestIndex;
-			}
-		}
-
-		// Find nearest trail point by longitude (trail runs roughly east-west)
-		let closestIndex = 0;
-		let closestDistance = Infinity;
-		for (let i = 0; i < trailPoints.length; i++) {
-			const dist = Math.abs(trailPoints[i].lng - clickLng);
-			if (dist < closestDistance) {
-				closestDistance = dist;
-				closestIndex = i;
-			}
-		}
-		return closestIndex;
-	}, []);
-
-	// Handle map press for distance measuring
-	const handleMapPress = useCallback((event: MapPressEvent) => {
+	const handleMapPress = (event: MapPressEvent) => {
 		if (!measureMode) return;
-
-		const { coordinate } = event.nativeEvent;
-		const nearestIndex = findNearestTrailPoint(coordinate.latitude, coordinate.longitude);
-
-		if (measurementPoints.start === null) {
-			setMeasurementPoints({ start: nearestIndex, end: null });
-		} else if (measurementPoints.end === null) {
-			setMeasurementPoints(prev => ({ ...prev, end: nearestIndex }));
-		}
-	}, [measureMode, measurementPoints.start, measurementPoints.end, findNearestTrailPoint]);
-
-	// Calculate distance when both points are set
-	const measuredDistance = useMemo(() => {
-		if (measurementPoints.start === null || measurementPoints.end === null) return null;
-		return calculateTrailDistance(trailPoints, measurementPoints.start, measurementPoints.end);
-	}, [measurementPoints.start, measurementPoints.end]);
+		const { latitude, longitude } = event.nativeEvent.coordinate;
+		segment.selectAt(latitude, longitude);
+	};
 
 	// Zoom to fit the measured segment between the overlay and the collapsed bottom sheet
-	const fitToMeasurement = useCallback(() => {
-		if (measurementPoints.start === null || measurementPoints.end === null) return;
+	const fitToMeasurement = () => {
+		if (segment.start === null || segment.end === null) return;
 		listSheetRef.current?.snapToIndex(0);
-
-		const coordinates = trailPoints.slice(
-			Math.min(measurementPoints.start, measurementPoints.end),
-			Math.max(measurementPoints.start, measurementPoints.end) + 1
-		).map(point => ({ latitude: point.lat, longitude: point.lng }));
-
-		// Android expects edge padding in pixels, iOS in points
-		const scale = Platform.OS === 'android' ? PixelRatio.get() : 1;
-		mapRef.current?.fitToCoordinates(coordinates, {
-			edgePadding: {
-				top: (measureOverlayBottom + MEASURE_FIT_MARGIN) * scale,
-				right: MEASURE_FIT_MARGIN * scale,
-				bottom: (BOTTOM_SHEET_COLLAPSED_HEIGHT + MEASURE_FIT_MARGIN) * scale,
-				left: MEASURE_FIT_MARGIN * scale,
-			},
-			animated: true,
+		fitMapToCoordinates(mapRef.current, getSegmentCoordinates(segment.start, segment.end), {
+			top: measureOverlayBottom + MEASURE_FIT_MARGIN,
+			right: MEASURE_FIT_MARGIN,
+			bottom: BOTTOM_SHEET_COLLAPSED_HEIGHT + MEASURE_FIT_MARGIN,
+			left: MEASURE_FIT_MARGIN,
 		});
-	}, [measurementPoints.start, measurementPoints.end, measureOverlayBottom]);
+	};
 
-	// Toggle measure mode
-	const toggleMeasureMode = useCallback(() => {
-		if (measureMode) {
-			setMeasureMode(false);
-			setMeasurementPoints({ start: null, end: null });
-		} else {
-			setMeasureMode(true);
-		}
-	}, [measureMode]);
+	const createTrip = () => {
+		if (segment.start === null || segment.end === null) return;
+		router.push({
+			pathname: '/new-trip/details',
+			params: { start: segment.start, end: segment.end },
+		});
+	};
 
-	// Clear measurement
-	const clearMeasurement = useCallback(() => {
-		setMeasurementPoints({ start: null, end: null });
+	const exitMeasureMode = () => {
+		segment.clear();
 		setMeasureMode(false);
-	}, []);
+	};
 
-	const { showLabels, showMarkers } = useMemo(() => {
-		const delta = currentRegion?.latitudeDelta ?? getTrailRegion().latitudeDelta;
-		return { showLabels: delta < 1.2, showMarkers: delta < 6 };
-	}, [currentRegion?.latitudeDelta]);
+	const { showLabels, showMarkers } = getMapDetailLevel(currentRegion?.longitudeDelta);
 
 	// Filter waypoints to those visible in the current viewport
 	const visibleWaypoints = useMemo(() => {
@@ -172,7 +104,7 @@ export default function Index() {
 			<MapView
 				ref={mapRef}
 				provider={PROVIDER_DEFAULT}
-				initialRegion={getTrailRegion()}
+				initialRegion={TRAIL_REGION}
 				onRegionChangeComplete={setCurrentRegion}
 				onPress={handleMapPress}
 				rotateEnabled={false}
@@ -182,92 +114,20 @@ export default function Index() {
 				}}
 			>
 				<Polyline
-					coordinates={trailPoints.map(point => ({
-						latitude: point.lat,
-						longitude: point.lng
-					}))}
+					coordinates={trailCoordinates}
 					strokeColor={colors.accent()}
 					strokeWidth={4}
 				/>
 
-				{/* Highlighted trail segment when measuring */}
-				{measurementPoints.start !== null && measurementPoints.end !== null && (
-					<Polyline
-						coordinates={trailPoints.slice(
-							Math.min(measurementPoints.start, measurementPoints.end),
-							Math.max(measurementPoints.start, measurementPoints.end) + 1
-						).map(point => ({
-							latitude: point.lat,
-							longitude: point.lng
-						}))}
-						strokeColor={colors.primary()}
-						strokeWidth={8}
-					/>
-				)}
+				<TrailSegmentLayer segment={segment} showLabels={showLabels} />
 
 				{showMarkers && (!measureMode || showLabels) ? waypoints.map((waypoint, index) => (
 					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedPoi === waypoint} focused={selectedPoi === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => handlePoiSelected(waypoint)} />
 				)) : null}
-
-				{/* Start marker */}
-				{measurementPoints.start !== null && (
-					<MeasureMarker
-						label="A"
-						markerKey={`start-${markerKeys.start}-${showLabels}`}
-						coordinate={{
-							latitude: trailPoints[measurementPoints.start].lat,
-							longitude: trailPoints[measurementPoints.start].lng,
-						}}
-						showLabels={showLabels}
-						onDrag={(e) => {
-							const nearestIndex = findNearestTrailPoint(
-								e.nativeEvent.coordinate.latitude,
-								e.nativeEvent.coordinate.longitude
-							);
-							setMeasurementPoints(prev => ({ ...prev, start: nearestIndex }));
-						}}
-						onDragEnd={(e) => {
-							const nearestIndex = findNearestTrailPoint(
-								e.nativeEvent.coordinate.latitude,
-								e.nativeEvent.coordinate.longitude
-							);
-							setMeasurementPoints(prev => ({ ...prev, start: nearestIndex }));
-							setMarkerKeys(prev => ({ ...prev, start: prev.start + 1 }));
-						}}
-					/>
-				)}
-
-				{/* End marker */}
-				{measurementPoints.end !== null && (
-					<MeasureMarker
-						label="B"
-						markerKey={`end-${markerKeys.end}-${showLabels}`}
-						coordinate={{
-							latitude: trailPoints[measurementPoints.end].lat,
-							longitude: trailPoints[measurementPoints.end].lng,
-						}}
-						showLabels={showLabels}
-						onDrag={(e) => {
-							const nearestIndex = findNearestTrailPoint(
-								e.nativeEvent.coordinate.latitude,
-								e.nativeEvent.coordinate.longitude
-							);
-							setMeasurementPoints(prev => ({ ...prev, end: nearestIndex }));
-						}}
-						onDragEnd={(e) => {
-							const nearestIndex = findNearestTrailPoint(
-								e.nativeEvent.coordinate.latitude,
-								e.nativeEvent.coordinate.longitude
-							);
-							setMeasurementPoints(prev => ({ ...prev, end: nearestIndex }));
-							setMarkerKeys(prev => ({ ...prev, end: prev.end + 1 }));
-						}}
-					/>
-				)}
 			</MapView>
 			{/* Trail button */}
 			<Pressable
-				onPress={() => mapRef.current?.animateToRegion(getTrailRegion())}
+				onPress={() => mapRef.current?.animateToRegion(TRAIL_REGION)}
 				style={{
 					position: 'absolute',
 					top: 20,
@@ -287,7 +147,7 @@ export default function Index() {
 			{/* Distance button */}
 			{!measureMode && (
 				<Pressable
-					onPress={toggleMeasureMode}
+					onPress={() => setMeasureMode(true)}
 					style={{
 						position: 'absolute',
 						top: 60,
@@ -307,45 +167,38 @@ export default function Index() {
 
 			{/* Measure overlay */}
 			{measureMode && (
-				<View
-					style={[styles.measureOverlay, { backgroundColor: colors.surface(0.9) }]}
+				<SegmentStatusCard
+					segment={segment}
+					onFit={fitToMeasurement}
+					style={styles.measureOverlay}
 					onLayout={(e) => setMeasureOverlayBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
-				>
-					<View style={styles.measureHeader}>
-						<View style={styles.measureRow}>
-							<MaterialCommunityIcons name="ruler" size={18} color={colors.primary()} />
-							<AppText style={styles.measureTitle}>Distance</AppText>
-						</View>
-						<Pressable
-							onPress={measuredDistance === null ? toggleMeasureMode : clearMeasurement}
-							style={[styles.clearButton, { backgroundColor: colors.accent() }]}
-						>
-							<AppText style={{ color: colors.surface() }}>
-								{measuredDistance === null ? 'Cancel' : 'Clear'}
-							</AppText>
-						</Pressable>
-					</View>
-					<View style={styles.measureRow}>
-						{measuredDistance === null ? (
-							<>
-								<MaterialCommunityIcons name="gesture-tap" size={20} color={colors.primary()} />
-								<AppText style={{ flexShrink: 1 }}>
-									{measurementPoints.start === null
-										? 'Tap the START point'
-										: 'Tap the END point'}
+					header={
+						<View style={styles.measureHeader}>
+							<View style={styles.measureRow}>
+								<MaterialCommunityIcons name="ruler" size={18} color={colors.primary()} />
+								<AppText style={styles.measureTitle}>Distance</AppText>
+							</View>
+							<Pressable
+								onPress={exitMeasureMode}
+								style={[styles.clearButton, { backgroundColor: colors.accent() }]}
+							>
+								<AppText style={{ color: colors.surface() }}>
+									{segment.distance === null ? 'Cancel' : 'Clear'}
 								</AppText>
-							</>
-						) : (
-							<>
-								<MaterialCommunityIcons name="map-marker-distance" size={20} color={colors.primary()} />
-								<AppText style={[styles.distanceText, { flex: 1 }]}>{measuredDistance.toFixed(2)} miles</AppText>
-								<Pressable onPress={fitToMeasurement} hitSlop={8} accessibilityLabel="Center on measured segment">
-									<Ionicons name="locate" size={24} color={colors.primary()} />
-								</Pressable>
-							</>
-						)}
-					</View>
-				</View>
+							</Pressable>
+						</View>
+					}
+				>
+					{segment.isComplete && (
+						<Pressable
+							onPress={createTrip}
+							style={[styles.createTripButton, { backgroundColor: colors.primary() }]}
+						>
+							<Ionicons name="add-circle-outline" size={18} color={colors.surface()} />
+							<AppText style={{ color: colors.surface(), fontWeight: '700' }}>Create trip</AppText>
+						</Pressable>
+					)}
+				</SegmentStatusCard>
 			)}
 
 			<TrailheadBottomSheet
@@ -371,9 +224,6 @@ const styles = StyleSheet.create({
 		top: 20,
 		left: 16,
 		right: 58,
-		padding: 12,
-		borderRadius: 12,
-		gap: 10,
 	},
 	measureHeader: {
 		flexDirection: 'row',
@@ -389,13 +239,17 @@ const styles = StyleSheet.create({
 	measureTitle: {
 		fontWeight: 'bold',
 	},
-	distanceText: {
-		fontSize: 20,
-		fontWeight: 'bold',
-	},
 	clearButton: {
 		paddingHorizontal: 12,
 		paddingVertical: 6,
+		borderRadius: 8,
+	},
+	createTripButton: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 6,
+		paddingVertical: 10,
 		borderRadius: 8,
 	},
 });

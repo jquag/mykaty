@@ -1,14 +1,66 @@
+import TripListItem from "@/components/TripListItem";
 import AppText from "@/components/ui/AppText";
+import { useTrips } from "@/contexts/TripsContext";
 import useColors from "@/hooks/use-colors";
-import { View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 
-export default function Index() {
+export default function Trips() {
 	const colors = useColors();
-  return (
-    <View
-      style={{ backgroundColor: colors.surface(), flex: 1, justifyContent: 'center', alignItems: 'center' }}
-    >
-      <AppText style={{color: colors.primary()}}>Trips page</AppText>
-    </View>
-  );
+	const router = useRouter();
+	const { trips, loading } = useTrips();
+
+	if (loading) {
+		return <View style={{ flex: 1, backgroundColor: colors.surface() }} />;
+	}
+
+	return (
+		<FlatList
+			style={{ backgroundColor: colors.surface() }}
+			contentContainerStyle={styles.content}
+			data={trips}
+			keyExtractor={(trip) => trip.id}
+			renderItem={({ item }) => <TripListItem trip={item} />}
+			ListEmptyComponent={
+				<View style={styles.empty}>
+					<MaterialCommunityIcons name="map-marker-path" size={48} color={colors.primary(0.6)} />
+					<AppText style={styles.emptyTitle}>No trips yet</AppText>
+					<AppText style={{ color: colors.text(0.6), textAlign: 'center' }}>
+						Pick a start and end on the trail to plan your first trip.
+					</AppText>
+					<Pressable
+						onPress={() => router.push('/new-trip')}
+						style={[styles.emptyButton, { backgroundColor: colors.primary() }]}
+					>
+						<AppText style={{ color: colors.surface(), fontWeight: '700' }}>Plan a trip</AppText>
+					</Pressable>
+				</View>
+			}
+		/>
+	);
 }
+
+const styles = StyleSheet.create({
+	content: {
+		flexGrow: 1,
+		paddingHorizontal: 16,
+	},
+	empty: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 8,
+		padding: 32,
+	},
+	emptyTitle: {
+		fontSize: 20,
+		fontWeight: 'bold',
+	},
+	emptyButton: {
+		marginTop: 12,
+		paddingHorizontal: 20,
+		paddingVertical: 12,
+		borderRadius: 10,
+	},
+});

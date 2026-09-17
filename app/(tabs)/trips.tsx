@@ -9,10 +9,28 @@ import { FlatList, Pressable, StyleSheet, View } from "react-native";
 export default function Trips() {
 	const colors = useColors();
 	const router = useRouter();
-	const { trips, loading } = useTrips();
+	const { trips, loading, loadFailed, reload } = useTrips();
 
 	if (loading) {
 		return <View style={{ flex: 1, backgroundColor: colors.surface() }} />;
+	}
+
+	if (loadFailed) {
+		return (
+			<View style={[styles.empty, { backgroundColor: colors.surface() }]}>
+				<MaterialCommunityIcons name="alert-circle-outline" size={48} color={colors.accent()} />
+				<AppText style={styles.emptyTitle}>{"Couldn't load your trips"}</AppText>
+				<AppText style={{ color: colors.text(0.6), textAlign: 'center' }}>
+					Your saved trips are still on this device. Try again in a moment.
+				</AppText>
+				<Pressable
+					onPress={reload}
+					style={[styles.emptyButton, { backgroundColor: colors.primary() }]}
+				>
+					<AppText style={{ color: colors.surface(), fontWeight: '700' }}>Try again</AppText>
+				</Pressable>
+			</View>
+		);
 	}
 
 	return (

@@ -2,8 +2,9 @@ import AppText from "@/components/ui/AppText";
 import { TRIP_TYPES } from "@/constants/tripTypes";
 import useColors from "@/hooks/use-colors";
 import type { Trip } from "@/types/Trip";
-import { formatTripDate, getTripMiles, getTripTitle } from "@/utils/trip-util";
+import { formatTripDate, getTripSummary } from "@/utils/trip-util";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export default function TripListItem({ trip }: Props) {
 	const colors = useColors();
 	const icon = TRIP_TYPES.find(option => option.value === trip.type)?.icon ?? 'bike';
+	const { title, miles } = useMemo(() => getTripSummary(trip), [trip]);
 
 	return (
 		<View style={[styles.container, { borderBottomColor: colors.text(0.1) }]}>
@@ -20,11 +22,11 @@ export default function TripListItem({ trip }: Props) {
 				<MaterialCommunityIcons name={icon} size={22} color={colors.primary()} />
 			</View>
 			<View style={styles.content}>
-				<AppText numberOfLines={1} style={styles.title}>{getTripTitle(trip)}</AppText>
+				<AppText numberOfLines={1} style={styles.title}>{title}</AppText>
 				<AppText style={{ fontSize: 14, color: colors.text(0.6) }}>{formatTripDate(trip)}</AppText>
 			</View>
 			<View style={styles.distance}>
-				<AppText style={styles.miles}>{getTripMiles(trip).toFixed(1)} mi</AppText>
+				<AppText style={styles.miles}>{miles.toFixed(1)} mi</AppText>
 				{trip.isRoundTrip && (
 					<AppText style={{ fontSize: 12, color: colors.text(0.6) }}>round trip</AppText>
 				)}

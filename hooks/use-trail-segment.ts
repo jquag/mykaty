@@ -22,11 +22,12 @@ export default function useTrailSegment(initial?: { start: number; end: number }
 
 	const selectAt = (lat: number, lng: number) => {
 		const index = findNearestTrailPoint(lat, lng);
-		if (start === null) {
-			setPoints({ start: index, end: null });
-		} else if (end === null) {
-			setPoints(prev => ({ ...prev, end: index }));
-		}
+		setPoints(prev => {
+			if (prev.start === null) return { start: index, end: null };
+			// An end on the start point measures nothing, so the next tap replaces it rather than being ignored
+			if (prev.end === null || prev.end === prev.start) return { ...prev, end: index };
+			return prev;
+		});
 	};
 
 	const dragTo = (which: SegmentEnd, lat: number, lng: number) => {

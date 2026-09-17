@@ -75,7 +75,7 @@ export default function DateTimeField({ mode, value, onChange, clearable = false
 								}
 							}}
 							onDismiss={() => {
-								if (value === undefined) onChange(pending ?? fallback);
+								if (value === undefined && pending !== undefined) onChange(pending);
 								setPending(undefined);
 							}}
 						/>

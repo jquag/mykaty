@@ -18,17 +18,20 @@ export const TRAIL_REGION = computeTrailRegion();
 // Zoom thresholds use longitudeDelta: unlike latitudeDelta, it stays constant while panning a Mercator map
 const MARKERS_MAX_LNG_DELTA = TRAIL_REGION.longitudeDelta * 0.5;
 
-const cumulativeMiles = computeCumulativeMiles();
-
+let cumulativeMiles: number[] | null = null;
 let waypointIndices: number[] | null = null;
 
 function computeTrailRegion() {
-	const allLats = trailPoints.map(p => p.lat);
-	const allLngs = trailPoints.map(p => p.lng);
-	const minLat = Math.min(...allLats);
-	const maxLat = Math.max(...allLats);
-	const minLng = Math.min(...allLngs);
-	const maxLng = Math.max(...allLngs);
+	let minLat = Infinity;
+	let maxLat = -Infinity;
+	let minLng = Infinity;
+	let maxLng = -Infinity;
+	for (const point of trailPoints) {
+		if (point.lat < minLat) minLat = point.lat;
+		if (point.lat > maxLat) maxLat = point.lat;
+		if (point.lng < minLng) minLng = point.lng;
+		if (point.lng > maxLng) maxLng = point.lng;
+	}
 
 	return {
 		latitude: (minLat + maxLat) / 2,
@@ -47,6 +50,11 @@ function computeCumulativeMiles() {
 	return miles;
 }
 
+function getCumulativeMiles() {
+	cumulativeMiles ??= computeCumulativeMiles();
+	return cumulativeMiles;
+}
+
 function getWaypointIndices() {
 	waypointIndices ??= waypoints.map(wp => nearestTrailIndex(wp.lat, wp.lng));
 	return waypointIndices;
@@ -57,7 +65,8 @@ export function isTrailIndex(index: number) {
 }
 
 export function getTrailMiles(startIndex: number, endIndex: number) {
-	return Math.abs(cumulativeMiles[endIndex] - cumulativeMiles[startIndex]);
+	const miles = getCumulativeMiles();
+	return Math.abs(miles[endIndex] - miles[startIndex]);
 }
 
 export function getSegmentCoordinates(startIndex: number, endIndex: number) {

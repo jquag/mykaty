@@ -58,6 +58,7 @@ export default function Index() {
 			pathname: '/new-trip/details',
 			params: { start: segment.start, end: segment.end },
 		});
+		segment.clear();
 	};
 
 	const exitMeasureMode = () => {
@@ -179,7 +180,7 @@ export default function Index() {
 								<AppText style={styles.measureTitle}>Distance</AppText>
 							</View>
 							<Pressable
-								onPress={exitMeasureMode}
+								onPress={segment.distance === null ? exitMeasureMode : segment.clear}
 								style={[styles.clearButton, { backgroundColor: colors.accent() }]}
 							>
 								<AppText style={{ color: colors.surface() }}>

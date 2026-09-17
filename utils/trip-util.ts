@@ -59,13 +59,11 @@ export function getRouteMiles(startIndex: number, endIndex: number, isRoundTrip:
 	return isRoundTrip ? miles * 2 : miles;
 }
 
-export function getTripTitle(trip: Trip) {
-	if (trip.title) return trip.title;
+// Recovering the trail indices costs a full scan of the trail, so both fields come from one call
+export function getTripSummary(trip: Trip) {
 	const { start, end } = getTripIndices(trip);
-	return getRouteName(start, end);
-}
-
-export function getTripMiles(trip: Trip) {
-	const { start, end } = getTripIndices(trip);
-	return getRouteMiles(start, end, trip.isRoundTrip);
+	return {
+		title: trip.title || getRouteName(start, end),
+		miles: getRouteMiles(start, end, trip.isRoundTrip),
+	};
 }

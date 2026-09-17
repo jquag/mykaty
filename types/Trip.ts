@@ -8,12 +8,14 @@ export type TripType = 'bike' | 'run' | 'walk';
 export interface Trip {
   id: string;
   title?: string;
-  startDate: string;
-  startTime?: string;
-  startPoint: Coordinate;
-  startPointName?: string;
-  endPoint: Coordinate;
-  endPointName?: string;
+  /** Local calendar date, 'YYYY-MM-DD' */
+  date: string;
+  /** Local time of day, 'HH:mm' */
+  time?: string;
+  /** Trail point the trip starts from */
+  start: Coordinate;
+  /** Trail point the trip ends at, or turns around at for a round trip */
+  end: Coordinate;
   type: TripType;
   isRoundTrip: boolean;
   notes?: string;

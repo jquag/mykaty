@@ -140,8 +140,13 @@ export default function TabLayout() {
 						<Ionicons name="bicycle" size={size} color={color} />
 					),
 					headerRight: () => (
-						<Pressable onPress={() => router.push('/(tabs)/trips')}>
-							<Ionicons name="add-circle" size={28} />
+						<Pressable
+							onPress={() => router.push('/new-trip')}
+							hitSlop={8}
+							accessibilityLabel="New trip"
+							style={{ marginRight: 16 }}
+						>
+							<Ionicons name="add-circle" size={28} color={colors.primary()} />
 						</Pressable>
 					),
 				}}

@@ -1,0 +1,5 @@
+[
+  { "name": "Washington", "from": "Dutzow", "lat": 38.5581, "lng": -91.0121, "radiusMiles": 1.5 },
+  { "name": "Hermann", "from": "McKittrick", "lat": 38.7042, "lng": -91.4374, "radiusMiles": 1.5 },
+  { "name": "Jefferson City", "from": "North Jefferson", "lat": 38.5767, "lng": -92.1735, "radiusMiles": 2 }
+]

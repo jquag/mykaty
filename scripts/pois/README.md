@@ -2,8 +2,6 @@
 
 Builds the points-of-interest file the app shows along the Katy Trail, and publishes it to S3.
 
-The app never calls a maps API. Instead this script pulls places from [Overture Maps](https://overturemaps.org) (free, open data), keeps the ones within 2 miles of the trail, and writes a single JSON file. The app downloads that file from S3 and caches it.
-
 This folder is a standalone package with its own `package.json` and `node_modules`, so its dependencies (DuckDB, the AWS SDK) stay out of the app.
 
 ## Setup
@@ -21,8 +19,6 @@ From the repo root:
 ```bash
 npm run build --prefix scripts/pois
 ```
-
-A run takes about 20 seconds and needs a network connection. It always fetches fresh data; nothing is cached between runs.
 
 | Environment variable | Purpose |
 |---|---|
@@ -117,25 +113,3 @@ The app must show the attribution string from the file (`© Overture Maps Founda
 ```
 
 Overture gives each place one primary category, so combined businesses (a cafe that is also a bike shop) land in only one, and can flip between releases. Use `patch` to pin them. Overture is also thin in the smallest towns (Hartsburg has nothing); use `add` for those. The script warns when an override id no longer exists in the data.
-
-## Pipeline
-
-1. **Fetch** places in the trail's bounding box whose Overture category is in `CATEGORY_MAP` (`overture.ts`). Access to Overture's bucket is anonymous; your AWS credentials are never sent to it.
-2. **Quality filter**: drop places with no name, marked closed, or with confidence under 0.5, and anything listed under `remove`.
-3. **Corridor**: keep places within 2 miles of a trail point.
-4. **River test**: drop a place if every straight line from it to the nearby trail crosses the Missouri River, unless it is in a bridge zone. The trail's own crossing at Boonville is handled naturally.
-5. **De-duplicate**: within a category, merge places with the same normalised name within 0.1 mile, keeping the higher-confidence one and filling in its missing contact details.
-6. **Overrides**: apply `patch`, then `add`.
-7. **Annotate** with trail mile, distance from the trail and nearest trailhead; sort by trail mile.
-
-## Files
-
-| File | Contents |
-|---|---|
-| `build.ts` | Entry point: pipeline, report, output, publish prompt. |
-| `overture.ts` | Release lookup and the DuckDB queries. |
-| `s3.ts` | Download of the published file and upload. |
-| `geo.ts` | Distance, nearest-point and line-intersection helpers; name normalisation. |
-| `config.ts` | Settings and the category map. |
-
-The `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON` flag in the build script silences a Node warning caused by importing `constants/*.ts` from the app, whose `package.json` has no `"type"` field. It is harmless.

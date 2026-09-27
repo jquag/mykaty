@@ -73,7 +73,7 @@ export async function fetchOverture(bbox: Bbox) {
 		const places = await rows<OverturePlace>(connection, `
 			SELECT id,
 				names.primary AS name,
-				categories.primary AS category,
+				taxonomy.primary AS category,
 				confidence,
 				operating_status AS operatingStatus,
 				websites[1] AS website,

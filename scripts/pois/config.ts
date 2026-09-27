@@ -27,8 +27,8 @@ const CATEGORY_MAP: Record<string, [PoiCategory, string]> = {
 	diner: ["food", "restaurant"],
 	bistro: ["food", "restaurant"],
 	soul_food: ["food", "restaurant"],
-	food: ["food", "restaurant"],
-	food_truck: ["food", "restaurant"],
+	food_and_drink: ["food", "restaurant"],
+	food_truck_stand: ["food", "restaurant"],
 	sandwich_shop: ["food", "restaurant"],
 	delicatessen: ["food", "restaurant"],
 	bar: ["food", "bar"],
@@ -55,12 +55,14 @@ const CATEGORY_MAP: Record<string, [PoiCategory, string]> = {
 	cafe: ["food", "cafe"],
 	tea_room: ["food", "cafe"],
 	coffee_roastery: ["food", "cafe"],
-	bubble_tea: ["food", "cafe"],
+	bubble_tea_shop: ["food", "cafe"],
 	smoothie_juice_bar: ["food", "cafe"],
 	bakery: ["food", "bakery"],
-	donuts: ["food", "bakery"],
+	donut_shop: ["food", "bakery"],
 	ice_cream_shop: ["food", "dessert"],
-	desserts: ["food", "dessert"],
+	dessert_shop: ["food", "dessert"],
+	frozen_yogurt_shop: ["food", "dessert"],
+	gelato_shop: ["food", "dessert"],
 
 	bed_and_breakfast: ["lodging", "bed_and_breakfast"],
 	inn: ["lodging", "bed_and_breakfast"],
@@ -69,7 +71,7 @@ const CATEGORY_MAP: Record<string, [PoiCategory, string]> = {
 	resort: ["lodging", "hotel"],
 	lodge: ["lodging", "hotel"],
 	hostel: ["lodging", "hotel"],
-	accommodation: ["lodging", "other"],
+	lodging: ["lodging", "other"],
 	holiday_rental_home: ["lodging", "rental"],
 	cottage: ["lodging", "rental"],
 	cabin: ["lodging", "rental"],
@@ -77,7 +79,6 @@ const CATEGORY_MAP: Record<string, [PoiCategory, string]> = {
 	rv_park: ["lodging", "camping"],
 
 	grocery_store: ["grocery", "grocery"],
-	supermarket: ["grocery", "grocery"],
 	organic_grocery_store: ["grocery", "grocery"],
 	international_grocery_store: ["grocery", "grocery"],
 	health_food_store: ["grocery", "grocery"],
@@ -87,17 +88,17 @@ const CATEGORY_MAP: Record<string, [PoiCategory, string]> = {
 	truck_gas_station: ["grocery", "convenience"],
 	pharmacy: ["grocery", "pharmacy"],
 
-	bicycle_shop: ["bike", "shop"],
+	bike_store: ["bike", "shop"],
 	bike_repair_maintenance: ["bike", "shop"],
-	bike_rentals: ["bike", "rental"],
+	bike_rental: ["bike", "rental"],
 };
 
 // Covers the long tail of cuisine-specific categories such as mexican_restaurant
 const RESTAURANT_SUFFIX = "_restaurant";
 
 export const OVERTURE_CATEGORY_SQL =
-	`(categories.primary IN (${Object.keys(CATEGORY_MAP).map(c => `'${c}'`).join(", ")})` +
-	` OR categories.primary LIKE '%${RESTAURANT_SUFFIX.replace("_", "\\_")}' ESCAPE '\\')`;
+	`(taxonomy.primary IN (${Object.keys(CATEGORY_MAP).map(c => `'${c}'`).join(", ")})` +
+	` OR taxonomy.primary LIKE '%${RESTAURANT_SUFFIX.replace("_", "\\_")}' ESCAPE '\\')`;
 
 export function categorize(overtureCategory: string): [PoiCategory, string] | null {
 	if (overtureCategory in CATEGORY_MAP) return CATEGORY_MAP[overtureCategory];

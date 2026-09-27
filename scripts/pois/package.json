@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON build.ts"
+    "build": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON build.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1136.0",

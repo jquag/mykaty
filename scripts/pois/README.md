@@ -26,6 +26,14 @@ npm run build --prefix scripts/pois
 | `POI_S3_PREFIX` | Optional folder inside the bucket. |
 | `OVERTURE_RELEASE` | Optional. Forces a specific Overture release (e.g. `2026-07-22.0`) instead of the latest. Overture only keeps its most recent releases online. |
 
+Set them on the command line or in `scripts/pois/.env`, which the script loads automatically:
+
+```bash
+AWS_PROFILE=mykaty-uploader
+POI_S3_BUCKET=mykaty-public
+POI_S3_PREFIX=pois
+```
+
 AWS credentials and region come from the usual places (`~/.aws`, `AWS_PROFILE`, environment variables). The credentials need `s3:GetObject`, `s3:PutObject` and `s3:ListBucket` on the bucket. Without `ListBucket`, S3 reports a missing file as "access denied" and the very first run fails.
 
 ## What a run does

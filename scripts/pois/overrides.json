@@ -1,5 +1,7 @@
 {
-  "remove": [],
+  "remove": [
+    { "id": "04f3a8e2-ed7e-4412-8f50-f8f22660dedf", "reason": "Trailhead Brewing, St. Charles: closed" }
+  ],
   "patch": {},
   "add": []
 }

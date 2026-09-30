@@ -1,5 +1,5 @@
 import { trailPoints } from "@/constants/trailPoints";
-import { waypoints } from "@/constants/waypoints";
+import { Waypoint, waypoints } from "@/constants/waypoints";
 import { haversineMiles } from "@/utils/map";
 
 // Longitude degrees are shorter than latitude degrees by cos(latitude), about 0.78 along the trail
@@ -7,6 +7,7 @@ const LNG_SCALE = 0.78;
 const AT_WAYPOINT_MILES = 0.1;
 const WAYPOINT_SNAP_DEGREES = 0.001;
 const LABELS_MAX_LNG_DELTA = 0.9;
+const POIS_MAX_LNG_DELTA = 0.3;
 
 export const trailCoordinates = trailPoints.map(point => ({
 	latitude: point.lat,
@@ -69,6 +70,10 @@ export function getTrailMiles(startIndex: number, endIndex: number) {
 	return Math.abs(miles[endIndex] - miles[startIndex]);
 }
 
+export function getWaypointTrailMile(waypoint: Waypoint) {
+	return getCumulativeMiles()[getWaypointIndices()[waypoints.indexOf(waypoint)]];
+}
+
 export function getSegmentCoordinates(startIndex: number, endIndex: number) {
 	return trailCoordinates.slice(
 		Math.min(startIndex, endIndex),
@@ -123,5 +128,6 @@ export function getMapDetailLevel(longitudeDelta: number = TRAIL_REGION.longitud
 	return {
 		showLabels: longitudeDelta < LABELS_MAX_LNG_DELTA,
 		showMarkers: longitudeDelta < MARKERS_MAX_LNG_DELTA,
+		showPois: longitudeDelta < POIS_MAX_LNG_DELTA,
 	};
 }

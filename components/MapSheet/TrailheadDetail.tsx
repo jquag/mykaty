@@ -1,15 +1,13 @@
 import { View, StyleSheet, Pressable, Linking } from 'react-native';
-import Animated, { SharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Waypoint, ServiceProvider, TrailheadServices } from '@/constants/waypoints';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetScrollView, useBottomSheet } from '@gorhom/bottom-sheet';
 
 interface Props {
 	waypoint: Waypoint;
-	animatedIndex: SharedValue<number>;
-	onClose: () => void;
 }
 
 const trailheadImages: Record<string, any> = {
@@ -45,8 +43,9 @@ interface ServiceConfig {
 
 const IMAGE_HEIGHT = 175;
 
-export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Props) {
+export default function TrailheadDetail({ waypoint }: Props) {
 	const colors = useColors();
+	const { animatedIndex, close } = useBottomSheet();
 
 	const imageSource = trailheadImages[waypoint.image ?? 'generic'] ?? trailheadImages.generic;
 
@@ -164,7 +163,7 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 					)}
 				</>
 			</BottomSheetScrollView>
-			<Pressable style={[styles.closeButton, { backgroundColor: colors.surface(.5) }]} onPress={onClose} hitSlop={8}>
+			<Pressable style={[styles.closeButton, { backgroundColor: colors.surface(.5) }]} onPress={() => close()} hitSlop={8}>
 				<Ionicons name="close" size={24} color={colors.text()} />
 			</Pressable>
 		</View>

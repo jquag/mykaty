@@ -1,15 +1,15 @@
-import { View, StyleSheet, Pressable, Linking } from 'react-native';
-import Animated, { SharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
+import { View, StyleSheet, Pressable } from 'react-native';
+import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Waypoint, ServiceProvider, TrailheadServices } from '@/constants/waypoints';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetScrollView, useBottomSheet } from '@gorhom/bottom-sheet';
+import { openUrl } from '@/utils/map';
+import { detailStyles } from './DetailBottomSheet';
 
 interface Props {
 	waypoint: Waypoint;
-	animatedIndex: SharedValue<number>;
-	onClose: () => void;
 }
 
 const trailheadImages: Record<string, any> = {
@@ -45,8 +45,9 @@ interface ServiceConfig {
 
 const IMAGE_HEIGHT = 175;
 
-export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Props) {
+export default function TrailheadDetail({ waypoint }: Props) {
 	const colors = useColors();
+	const { animatedIndex } = useBottomSheet();
 
 	const imageSource = trailheadImages[waypoint.image ?? 'generic'] ?? trailheadImages.generic;
 
@@ -93,30 +94,30 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 
 	const handlePhonePress = () => {
 		if (waypoint.contact?.phone) {
-			Linking.openURL(`tel:${waypoint.contact.phone}`);
+			openUrl(`tel:${waypoint.contact.phone}`);
 		}
 	};
 
 	return (
-		<View style={styles.container}>
+		<View style={detailStyles.container}>
 			<Animated.Image
 				source={imageSource}
 				style={[styles.bannerImage, imageAnimatedStyle]}
 				resizeMode="cover"
 			/>
 
-			<View style={styles.header}>
+			<View style={detailStyles.header}>
 				<View>
-					<AppText style={styles.name}>{waypoint.name}</AppText>
+					<AppText style={detailStyles.name}>{waypoint.name}</AppText>
 					<AppText style={{ color: colors.primary() }}>Trailhead</AppText>
 				</View>
 			</View>
 
-			<BottomSheetScrollView style={styles.scrollView}>
+			<BottomSheetScrollView style={detailStyles.scrollView}>
 				<>
 					{availableServices.length > 0 && (
-						<View style={styles.section}>
-							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Services</AppText>
+						<View style={detailStyles.section}>
+							<AppText style={[detailStyles.sectionTitle, { color: colors.text(0.6) }]}>Services</AppText>
 							<View style={styles.servicesGrid}>
 								{availableServices.map((config) => {
 									const provider = waypoint.services?.[config.key] ?? null;
@@ -136,8 +137,8 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 						</View>
 					)}
 
-					<View style={styles.section}>
-						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
+					<View style={detailStyles.section}>
+						<AppText style={[detailStyles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
 						{waypoint.contact ? (
 							<>
 								{waypoint.contact.name && (
@@ -157,61 +158,26 @@ export default function TrailheadDetail({ waypoint, animatedIndex, onClose }: Pr
 					</View>
 
 					{waypoint.notes && (
-						<View style={styles.section}>
-							<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Notes</AppText>
+						<View style={detailStyles.section}>
+							<AppText style={[detailStyles.sectionTitle, { color: colors.text(0.6) }]}>Notes</AppText>
 							<AppText style={styles.notes}>{waypoint.notes}</AppText>
 						</View>
 					)}
 				</>
 			</BottomSheetScrollView>
-			<Pressable style={[styles.closeButton, { backgroundColor: colors.surface(.5) }]} onPress={onClose} hitSlop={8}>
-				<Ionicons name="close" size={24} color={colors.text()} />
-			</Pressable>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-	},
-	scrollView: {
-		flex: 1,
-	},
-	closeButton: {
-		position: 'absolute',
-		top: 8,
-		right: 12,
-		padding: 4,
-		borderRadius: 20,
-	},
 	bannerImage: {
 		width: '100%',
 		height: 150,
-	},
-	header: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		paddingRight: 48,
 	},
 	marker: {
 		borderRadius: 6,
 		marginRight: 12,
 		padding: 4,
-	},
-	name: {
-		fontSize: 24,
-		fontWeight: '700',
-	},
-	section: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-	},
-	sectionTitle: {
-		fontSize: 12,
-		fontWeight: '600',
-		textTransform: 'uppercase',
-		marginBottom: 8,
 	},
 	servicesGrid: {
 		flexDirection: 'row',

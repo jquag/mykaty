@@ -126,6 +126,14 @@ function nearestTrailhead(trailIndex: number) {
 	return waypoints[best].name;
 }
 
+// US numbers become E.164 (+1XXXXXXXXXX); anything else is kept as published
+function normalizePhone(phone: string) {
+	const digits = phone.replace(/\D/g, "");
+	if (digits.length === 10) return `+1${digits}`;
+	if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+	return phone;
+}
+
 function finalize(draft: PoiDraft, location: NonNullable<ReturnType<typeof locate>>): Poi {
 	return {
 		id: draft.id,
@@ -138,7 +146,7 @@ function finalize(draft: PoiDraft, location: NonNullable<ReturnType<typeof locat
 		trailMile: round(trailMiles[location.index], 1),
 		milesFromTrail: round(location.miles, 2),
 		nearestTrailhead: nearestTrailhead(location.index),
-		...(draft.phone && { phone: draft.phone }),
+		...(draft.phone && { phone: normalizePhone(draft.phone) }),
 		...(draft.website && { website: draft.website }),
 		...(draft.address && { address: draft.address }),
 		...(location.acrossRiver && { acrossRiver: true as const }),

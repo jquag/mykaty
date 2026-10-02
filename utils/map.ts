@@ -1,7 +1,7 @@
 import { Coordinate } from '@/types/Trip';
-import { PixelRatio, Platform } from 'react-native';
+import { Linking, PixelRatio, Platform } from 'react-native';
 import type MapView from 'react-native-maps';
-import type { EdgePadding, LatLng } from 'react-native-maps';
+import type { EdgePadding, LatLng, Region } from 'react-native-maps';
 
 /**
  * Calculate distance in miles between two coordinates using the Haversine formula
@@ -18,6 +18,26 @@ export function haversineMiles(start: Coordinate, end: Coordinate): number {
     Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+export function isInRegion(point: Coordinate, region: Region): boolean {
+  return Math.abs(point.lat - region.latitude) < region.latitudeDelta / 2 &&
+    Math.abs(point.lng - region.longitude) < region.longitudeDelta / 2;
+}
+
+export function openInMaps(point: Coordinate, label: string) {
+  const { lat, lng } = point;
+  const encodedLabel = encodeURIComponent(label);
+  const url = Platform.select({
+    ios: `maps://?ll=${lat},${lng}&q=${encodedLabel}`,
+    android: `geo:${lat},${lng}?q=${lat},${lng}(${encodedLabel})`,
+    default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+  });
+  openUrl(url);
+}
+
+export function openUrl(url: string) {
+  Linking.openURL(url).catch(error => console.warn(`Couldn't open ${url}:`, error));
 }
 
 /**

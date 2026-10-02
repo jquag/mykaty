@@ -121,7 +121,7 @@ export default function Index() {
 	if (searching) {
 		emptyMessage = 'No places match';
 	} else if (enabledCategories.size > 0) {
-		emptyMessage = 'Zoom in to see trailheads and places';
+		emptyMessage = showPois ? 'No trailheads or places here' : 'Zoom in to see trailheads and places';
 	}
 
 	// Offset the center so the marker appears in the visible area above the sheet

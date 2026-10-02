@@ -85,6 +85,17 @@ function poiSearchText(poi: Poi) {
 	].join(' '));
 }
 
+const searchIndexCache = new WeakMap<Poi[], { poi: Poi; name: string; details: string }[]>();
+
+function getSearchIndex(pois: Poi[]) {
+	let index = searchIndexCache.get(pois);
+	if (!index) {
+		index = pois.map(poi => ({ poi, name: normalize(poi.name), details: poiSearchText(poi) }));
+		searchIndexCache.set(pois, index);
+	}
+	return index;
+}
+
 // 0: name is the query, 1: name starts with it, 2: name contains it, 3: every word appears somewhere in the details
 function matchRank(query: string, words: string[], name: string, details: string) {
 	if (name === query) return 0;
@@ -108,8 +119,8 @@ export function searchPlaces(query: string, pois: Poi[]): Place[] {
 		const rank = matchRank(normalizedQuery, words, name, `${name} trailhead`);
 		if (rank !== null) matches.push({ place: { kind: 'trailhead', waypoint }, rank });
 	}
-	for (const poi of pois) {
-		const rank = matchRank(normalizedQuery, words, normalize(poi.name), poiSearchText(poi));
+	for (const { poi, name, details } of getSearchIndex(pois)) {
+		const rank = matchRank(normalizedQuery, words, name, details);
 		if (rank !== null) matches.push({ place: { kind: 'poi', poi }, rank });
 	}
 

@@ -1,11 +1,12 @@
-import { View, StyleSheet, Pressable, Linking } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { BottomSheetScrollView, useBottomSheet } from '@gorhom/bottom-sheet';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import type { ComponentProps } from 'react';
 import { Poi } from '@/constants/pois';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
-import { openInMaps } from '@/utils/map';
+import { openInMaps, openUrl } from '@/utils/map';
+import { detailStyles } from './DetailBottomSheet';
 import {
 	formatMilesFromTrail,
 	isOnTrail,
@@ -20,16 +21,15 @@ interface Props {
 
 export default function PoiDetail({ poi, attribution }: Props) {
 	const colors = useColors();
-	const { close } = useBottomSheet();
 	const category = getCategoryConfig(poi.category);
 	const { phone, website, address } = poi;
 	const phoneParts = phone?.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
 	const websiteUrl = website && (/^https?:\/\//i.test(website) ? website : `https://${website}`);
 
 	return (
-		<View style={styles.container}>
-			<View style={styles.header}>
-				<AppText style={styles.name}>{poi.name}</AppText>
+		<View style={detailStyles.container}>
+			<View style={[detailStyles.header, styles.header]}>
+				<AppText style={detailStyles.name}>{poi.name}</AppText>
 				<View style={styles.categoryRow}>
 					<MaterialCommunityIcons name={category.icon} size={16} color={category.color} />
 					<AppText style={{ color: colors.text(0.8), fontWeight: '600' }}>{getSubcategoryLabel(poi)}</AppText>
@@ -44,39 +44,39 @@ export default function PoiDetail({ poi, attribution }: Props) {
 				)}
 			</View>
 
-			<BottomSheetScrollView style={styles.scrollView}>
+			<BottomSheetScrollView style={detailStyles.scrollView}>
 				<View style={styles.actions}>
 					<ActionButton icon="map" label="Maps" onPress={() => openInMaps(poi, poi.name)} />
-					{phone && <ActionButton icon="call" label="Call" onPress={() => Linking.openURL(`tel:${phone}`)} />}
-					{websiteUrl && <ActionButton icon="globe-outline" label="Website" onPress={() => Linking.openURL(websiteUrl)} />}
+					{phone && <ActionButton icon="call" label="Call" onPress={() => openUrl(`tel:${phone}`)} />}
+					{websiteUrl && <ActionButton icon="globe-outline" label="Website" onPress={() => openUrl(websiteUrl)} />}
 				</View>
 
 				{poi.acrossRiver && (
-					<View style={styles.section}>
-						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Getting there</AppText>
+					<View style={detailStyles.section}>
+						<AppText style={[detailStyles.sectionTitle, { color: colors.text(0.6) }]}>Getting there</AppText>
 						<AppText style={styles.body}>Across the Missouri River from the trail, reached by bridge.</AppText>
 					</View>
 				)}
 
 				{address && (
-					<View style={styles.section}>
-						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Address</AppText>
+					<View style={detailStyles.section}>
+						<AppText style={[detailStyles.sectionTitle, { color: colors.text(0.6) }]}>Address</AppText>
 						<AppText style={styles.body}>{address}</AppText>
 					</View>
 				)}
 
 				{(phone || website) && (
-					<View style={styles.section}>
-						<AppText style={[styles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
+					<View style={detailStyles.section}>
+						<AppText style={[detailStyles.sectionTitle, { color: colors.text(0.6) }]}>Contact</AppText>
 						{phone && (
-							<Pressable onPress={() => Linking.openURL(`tel:${phone}`)}>
+							<Pressable onPress={() => openUrl(`tel:${phone}`)}>
 								<AppText style={[styles.link, { color: colors.accent() }]}>
 									{phoneParts ? `(${phoneParts[1]}) ${phoneParts[2]}-${phoneParts[3]}` : phone}
 								</AppText>
 							</Pressable>
 						)}
 						{website && websiteUrl && (
-							<Pressable onPress={() => Linking.openURL(websiteUrl)}>
+							<Pressable onPress={() => openUrl(websiteUrl)}>
 								<AppText style={[styles.link, { color: colors.accent() }]} numberOfLines={1}>
 									{website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
 								</AppText>
@@ -89,9 +89,6 @@ export default function PoiDetail({ poi, attribution }: Props) {
 					<AppText style={[styles.attribution, { color: colors.text(0.4) }]}>{attribution}</AppText>
 				)}
 			</BottomSheetScrollView>
-			<Pressable style={[styles.closeButton, { backgroundColor: colors.surface(.5) }]} onPress={() => close()} hitSlop={8}>
-				<Ionicons name="close" size={24} color={colors.text()} />
-			</Pressable>
 		</View>
 	);
 }
@@ -119,28 +116,8 @@ function ActionButton({ icon, label, onPress }: ActionButtonProps) {
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-	},
-	scrollView: {
-		flex: 1,
-	},
-	closeButton: {
-		position: 'absolute',
-		top: 8,
-		right: 12,
-		padding: 4,
-		borderRadius: 20,
-	},
 	header: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		paddingRight: 48,
 		gap: 4,
-	},
-	name: {
-		fontSize: 24,
-		fontWeight: '700',
 	},
 	categoryRow: {
 		flexDirection: 'row',
@@ -169,16 +146,6 @@ const styles = StyleSheet.create({
 	actionLabel: {
 		fontSize: 13,
 		fontWeight: '600',
-	},
-	section: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-	},
-	sectionTitle: {
-		fontSize: 12,
-		fontWeight: '600',
-		textTransform: 'uppercase',
-		marginBottom: 8,
 	},
 	body: {
 		fontSize: 14,

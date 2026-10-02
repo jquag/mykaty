@@ -33,7 +33,11 @@ export function openInMaps(point: Coordinate, label: string) {
     android: `geo:${lat},${lng}?q=${lat},${lng}(${encodedLabel})`,
     default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
   });
-  Linking.openURL(url);
+  openUrl(url);
+}
+
+export function openUrl(url: string) {
+  Linking.openURL(url).catch(error => console.warn(`Couldn't open ${url}:`, error));
 }
 
 /**

@@ -3,14 +3,21 @@ export type PoiCategory = "food" | "lodging" | "grocery" | "bike";
 export const OVERTURE_CATALOG_URL = "https://stac.overturemaps.org/catalog.json";
 export const OVERTURE_BUCKET = "s3://overturemaps-us-west-2";
 export const OVERTURE_REGION = "us-west-2";
-export const ATTRIBUTION = "© Overture Maps Foundation";
+export const ATTRIBUTION = "© Overture Maps Foundation, © OpenStreetMap contributors";
 
 export const SCHEMA_VERSION = 1;
+// Places are kept when their bike route from the trail is at most this long
 export const CORRIDOR_MILES = 2;
 export const MIN_CONFIDENCE = 0.5;
 export const CLOSED_STATUSES = ["permanently_closed", "temporarily_closed"];
 export const DEDUPE_MILES = 0.1;
 export const RIVER_NAME = "Missouri River";
+
+export const ROUTE_SAMPLE_MILES = 0.2;
+export const ROUTE_MAX_SNAP_MILES = 0.1;
+// The public FOSSGIS server allows one request per second and OSRM's default table limit is 100 coordinates
+export const ROUTE_REQUEST_INTERVAL_MS = 1100;
+export const ROUTE_TABLE_MAX_COORDS = 100;
 
 // A warning is shown before publishing when counts fall by more than these fractions against the published file
 export const MAX_TOTAL_DROP = 0.2;

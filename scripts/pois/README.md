@@ -25,6 +25,7 @@ npm run build --prefix scripts/pois
 | `POI_S3_BUCKET` | Bucket to compare against and publish to. Without it the script only builds the local files. |
 | `POI_S3_PREFIX` | Optional folder inside the bucket. |
 | `OVERTURE_RELEASE` | Optional. Forces a specific Overture release (e.g. `2026-07-22.0`) instead of the latest. Overture only keeps its most recent releases online. |
+| `OSRM_URL` | Optional. OSRM server with a bike profile, used for route distances. Defaults to the public FOSSGIS server, `https://routing.openstreetmap.de/routed-bike`. |
 
 Set them on the command line or in `scripts/pois/.env`, which the script loads automatically:
 
@@ -41,9 +42,10 @@ AWS credentials and region come from the usual places (`~/.aws`, `AWS_PROFILE`, 
 1. Downloads the currently published `pois.json` from S3 and saves a copy to `out/pois.published.json`.
 2. Looks up the latest Overture release and fetches the places inside the trail's bounding box, plus the Missouri River line.
 3. Filters, de-duplicates and annotates the places (see [Pipeline](#pipeline)).
-4. Prints a report: totals, a per-trailhead table, coverage against the State Parks services grid in `constants/waypoints.ts`, and the changes versus the published file.
-5. Writes the output files to `out/`.
-6. Asks whether to publish. Only `y` or `yes` uploads; anything else does nothing.
+4. Measures each place's bike route from the trail (see [Route distances](#route-distances)). This takes about five minutes.
+5. Prints a report: totals, a per-trailhead table, coverage against the State Parks services grid in `constants/waypoints.ts`, and the changes versus the published file.
+6. Writes the output files to `out/`.
+7. Asks whether to publish. Only `y` or `yes` uploads; anything else does nothing.
 
 It skips the question when the bucket isn't set, when the new file is identical to the published one, or when it isn't running in a terminal (piped, cron, CI). In all three cases nothing is uploaded.
 
@@ -51,7 +53,7 @@ It skips the question when the bucket isn't set, when the new file is identical 
 
 The script waits at the publish prompt, so review in another terminal first.
 
-**Change summary.** Printed to the terminal: a table of published vs new counts per category, then every added (`+`) and removed (`-`) place, then places that changed in a way that matters (`~`: renamed, re-categorised, moved 0.05 mi or more, or changed river side). Phone, website and address edits are only counted, because most are formatting noise.
+**Change summary.** Printed to the terminal: a table of published vs new counts per category, then every added (`+`) and removed (`-`) place, then places that changed in a way that matters (`~`: renamed, re-categorised, moved 0.05 mi or more, changed river side, or distance from the trail changed by 0.25 mi or more). Phone, website and address edits are only counted, because most are formatting noise.
 
 **Line-by-line diff.** Both files are formatted and sorted the same way, so the diff shows only real differences:
 
@@ -83,29 +85,37 @@ Each entry in `pois.json`:
   "category": "food",          // food | lodging | grocery | bike
   "subcategory": "restaurant",
   "lat": 38.57, "lng": -90.88,
-  "trailIndex": 1234,          // index into constants/trailPoints.ts of the nearest trail point
+  "trailIndex": 1234,          // index into constants/trailPoints.ts of where to leave the trail
   "trailMile": 38.2,           // trail miles from Machens
-  "milesFromTrail": 0.3,
+  "milesFromTrail": 0.3,       // bike route from the trail
   "nearestTrailhead": "Augusta",
   "phone": "…", "website": "…", "address": "…",   // when known
   "acrossRiver": true          // only on places reached by a bridge
 }
 ```
 
-The app must show the attribution string from the file (`© Overture Maps Foundation`) somewhere, such as an about screen. That is the only licence requirement.
+The app must show the attribution string from the file (`© Overture Maps Foundation, © OpenStreetMap contributors`) somewhere, such as an about screen. That is the only licence requirement. The OpenStreetMap credit covers the route distances.
+
+## Route distances
+
+`milesFromTrail` is the shortest bike route from the trail, so a place across a highway or up a long driveway shows its real distance. The script samples the trail every 0.2 mi, sends OSRM table requests from the samples within 2 mi of each place, and keeps the shortest. The winning sample becomes the place's `trailIndex`, `trailMile` and `nearestTrailhead`, so a place is listed where riders actually leave the trail. Places more than 2 mi away by bike are dropped, even when they are within 2 mi in a straight line.
+
+OSRM moves each point onto the nearest way it can route a bike on. When that way is more than 0.1 mi from the place (typically a gas station on a highway bikes can't use), the place is treated as unreachable by bike and dropped, as are places OSRM finds no route to. The run lists every place dropped for having no route so you can check them; to keep one, move it onto its entrance with a `patch` in `overrides.json`.
+
+The public FOSSGIS server allows one request per second and no heavy use. A run makes about 30 requests, spaced a second apart, and retries failures with backoff. If the server is unavailable, the build stops instead of publishing straight-line distances. To use your own server instead, run OSRM in Docker with the bike profile on a Missouri extract from Geofabrik, then set `OSRM_URL`.
 
 ## Tuning
 
-**`config.ts`** holds the corridor width, minimum Overture confidence (0.5), de-duplication distance, drop-warning thresholds, and the map from Overture categories to the app's four categories. To include a new kind of place, add its Overture category to `CATEGORY_MAP`.
+**`config.ts`** holds the corridor width (`CORRIDOR_MILES`, the longest bike route from the trail that is kept), minimum Overture confidence (0.5), de-duplication distance, drop-warning thresholds, and the map from Overture categories to the app's four categories. To include a new kind of place, add its Overture category to `CATEGORY_MAP`.
 
-**`bridges.json`** lists towns on the far side of the Missouri River that riders can actually reach. Places across the river are normally dropped; inside one of these circles they are kept and flagged `acrossRiver`. At the current 2-mile corridor only Hermann and Jefferson City have any effect; Washington is further than 2 miles from the trail.
+**`bridges.json`** lists towns on the far side of the Missouri River that riders can actually reach. Places across the river are normally dropped; inside one of these circles they are kept and flagged `acrossRiver`. Crossing the bridge alone takes up most of the 2-mile corridor, so each town has its own `maxRouteMiles`, the longest bike route kept there. Places still have to be within the corridor in a straight line. At the current 2-mile corridor only Hermann and Jefferson City have any effect; Washington is further than 2 miles from the trail.
 
 **`overrides.json`** is for hand corrections, keyed by the `id` in `pois.json`:
 
 ```json
 {
   "remove": [{ "id": "…", "reason": "closed in 2026" }],
-  "patch": { "…": { "category": "bike", "subcategory": "shop" } },
+  "patch": { "…": { "category": "bike", "subcategory": "shop", "reason": "also a bike shop" } },
   "add": [
     {
       "name": "Example Cafe",

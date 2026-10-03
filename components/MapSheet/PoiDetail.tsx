@@ -9,7 +9,6 @@ import { openInMaps, openUrl } from '@/utils/map';
 import { detailStyles } from './DetailBottomSheet';
 import {
 	formatMilesFromTrail,
-	isOnTrail,
 	getCategoryConfig,
 	getSubcategoryLabel,
 } from '@/utils/pois';
@@ -37,11 +36,6 @@ export default function PoiDetail({ poi, attribution }: Props) {
 				<AppText style={[styles.trailInfo, { color: colors.text(0.6) }]}>
 					{formatMilesFromTrail(poi.milesFromTrail)} · near {poi.nearestTrailhead}
 				</AppText>
-				{!isOnTrail(poi.milesFromTrail) && (
-					<AppText style={[styles.distanceNote, { color: colors.text(0.45) }]}>
-						Straight-line distance; the actual route may be longer.
-					</AppText>
-				)}
 			</View>
 
 			<BottomSheetScrollView style={detailStyles.scrollView}>
@@ -123,9 +117,6 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 6,
-	},
-	distanceNote: {
-		fontSize: 12,
 	},
 	trailInfo: {
 		fontSize: 14,

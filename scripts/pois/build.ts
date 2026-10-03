@@ -22,6 +22,7 @@ import type { PoiCategory } from "./config.ts";
 import { boundingBox, cumulativeMiles, haversineMiles, nearestOnLine, normalizeName, segmentsIntersect } from "./geo.ts";
 import type { LatLng } from "./geo.ts";
 import { fetchOverture } from "./overture.ts";
+import { routeFromTrail, routingServer } from "./routes.ts";
 import { downloadPublished, s3Configured, s3Target, uploadJson } from "./s3.ts";
 
 interface Poi {
@@ -54,11 +55,12 @@ interface PoiFile {
 interface BridgeZone extends LatLng {
 	name: string;
 	radiusMiles: number;
+	maxRouteMiles: number;
 }
 
 interface Overrides {
 	remove: { id: string; reason?: string }[];
-	patch: Record<string, Partial<PoiDraft>>;
+	patch: Record<string, Partial<PoiDraft> & { reason?: string }>;
 	add: (Omit<PoiDraft, "id"> & { id?: string })[];
 }
 
@@ -82,6 +84,7 @@ const SERVICE_MATCHERS: Partial<Record<keyof TrailheadServices, (poi: Poi) => bo
 const CANDIDATE_STRIDE = 5;
 const CONTACT_FIELDS = ["phone", "website", "address"] as const;
 const MOVED_MILES = 0.05;
+const DISTANCE_CHANGE_MILES = 0.25;
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8"));
 const round = (value: number, digits: number) => Number(value.toFixed(digits));
@@ -134,6 +137,10 @@ function normalizePhone(phone: string) {
 	return phone;
 }
 
+function trailPosition(trailIndex: number) {
+	return { trailIndex, trailMile: round(trailMiles[trailIndex], 1), nearestTrailhead: nearestTrailhead(trailIndex) };
+}
+
 function finalize(draft: PoiDraft, location: NonNullable<ReturnType<typeof locate>>): Poi {
 	return {
 		id: draft.id,
@@ -142,10 +149,8 @@ function finalize(draft: PoiDraft, location: NonNullable<ReturnType<typeof locat
 		subcategory: draft.subcategory,
 		lat: round(draft.lat, 6),
 		lng: round(draft.lng, 6),
-		trailIndex: location.index,
-		trailMile: round(trailMiles[location.index], 1),
+		...trailPosition(location.index),
 		milesFromTrail: round(location.miles, 2),
-		nearestTrailhead: nearestTrailhead(location.index),
 		...(draft.phone && { phone: normalizePhone(draft.phone) }),
 		...(draft.website && { website: draft.website }),
 		...(draft.address && { address: draft.address }),
@@ -217,7 +222,30 @@ function dedupe<T extends PoiDraft & { confidence: number }>(drafts: T[]) {
 	return { kept, merged };
 }
 
-function buildPois() {
+// Places across the river get their town's longer limit, since the bridge alone adds most of the corridor
+function routeLimit(poi: Poi) {
+	const zone = poi.acrossRiver && bridges.find(zone => haversineMiles(poi, zone) <= zone.radiusMiles);
+	return zone ? zone.maxRouteMiles : CORRIDOR_MILES;
+}
+
+// Replaces the straight-line distance with the bike route from wherever on the trail it is shortest to leave,
+// and drops places a bike can't reach within their limit
+async function applyRoutes(pois: Poi[]) {
+	console.log(`routing ${pois.length} places from the trail with ${routingServer}`);
+	const routes = await routeFromTrail(pois, routeLimit, trailPoints, trailMiles);
+	const unreachable = pois.filter(poi => !routes.has(poi));
+	const tooFar = pois.filter(poi => routes.has(poi) && routes.get(poi)!.miles > routeLimit(poi));
+	console.log(`dropped ${tooFar.length} too far by bike, ${unreachable.length} with no bike route:`);
+	for (const poi of unreachable) console.log(`  - ${poi.name} (${poi.nearestTrailhead}) ${poi.lat},${poi.lng}`);
+
+	return pois.flatMap((poi): Poi[] => {
+		const route = routes.get(poi);
+		if (!route || route.miles > routeLimit(poi)) return [];
+		return [{ ...poi, ...trailPosition(route.trailIndex), milesFromTrail: round(route.miles, 2) }];
+	});
+}
+
+async function buildPois() {
 	const { drafts, dropped } = collectDrafts();
 
 	let outsideCorridor = 0;
@@ -238,7 +266,8 @@ function buildPois() {
 
 	const pois: Poi[] = [];
 	for (const draft of kept) {
-		const patched = { ...draft, ...overrides.patch[draft.id] };
+		const { reason: _reason, ...patch } = overrides.patch[draft.id] ?? {};
+		const patched = { ...draft, ...patch };
 		const location = locate(patched, CORRIDOR_MILES, true);
 		if (location) pois.push(finalize(patched, location));
 		else console.warn(`warning: patch moved ${draft.id} (${draft.name}) out of the corridor; dropped`);
@@ -248,12 +277,12 @@ function buildPois() {
 		pois.push(finalize({ ...entry, id }, locate(entry, Infinity, false)!));
 	}
 
-	pois.sort((a, b) => a.trailMile - b.trailMile || a.id.localeCompare(b.id));
-
 	console.log(`overture places fetched: ${places.length}`);
 	console.log(`dropped: ${Object.entries(dropped).map(([k, v]) => `${k} ${v}`).join(", ")}, outside corridor ${outsideCorridor}, far bank ${farBank}, duplicates ${merged}`);
 	console.log(`manual additions: ${overrides.add.length}`);
-	return pois;
+
+	const routed = await applyRoutes(pois);
+	return routed.sort((a, b) => a.trailMile - b.trailMile || a.id.localeCompare(b.id));
 }
 
 function countBy<T>(items: T[], key: (item: T) => string) {
@@ -300,6 +329,9 @@ function describeChanges(before: Poi, after: Poi) {
 	const moved = haversineMiles(before, after);
 	if (moved >= MOVED_MILES) changes.push(`moved ${moved.toFixed(2)} mi`);
 	if (before.acrossRiver !== after.acrossRiver) changes.push(after.acrossRiver ? "now across the river" : "no longer across the river");
+	if (Math.abs(before.milesFromTrail - after.milesFromTrail) >= DISTANCE_CHANGE_MILES) {
+		changes.push(`${before.milesFromTrail} -> ${after.milesFromTrail} mi from trail`);
+	}
 	return changes;
 }
 
@@ -419,7 +451,7 @@ async function confirm(question: string) {
 }
 
 const published = await loadPublished();
-const pois = buildPois();
+const pois = await buildPois();
 const warnings = published ? checkDrops(pois, published.pois) : [];
 report(pois);
 if (published) reportChanges(pois, published, warnings);

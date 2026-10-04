@@ -67,11 +67,12 @@ interface Table {
 	destinations: { distance: number }[];
 }
 
-async function fetchTable(coordinates: LatLng[], sourceCount: number): Promise<Table> {
-	const path = coordinates.map(c => `${c.lng.toFixed(6)},${c.lat.toFixed(6)}`).join(";");
-	const indices = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i).join(";");
-	const url = `${osrmUrl}/table/v1/bike/${path}?sources=${indices(0, sourceCount)}&destinations=${indices(sourceCount, coordinates.length)}&annotations=distance`;
+class PermanentError extends Error {}
 
+const coordinatePath = (coordinates: LatLng[]) => coordinates.map(c => `${c.lng.toFixed(6)},${c.lat.toFixed(6)}`).join(";");
+
+// Spaces requests to the server's rate limit and retries server errors; client errors fail at once as PermanentError
+async function osrmGet<T>(url: string): Promise<T> {
 	for (let attempt = 1; ; attempt++) {
 		await sleep(Math.max(0, lastRequestAt + ROUTE_REQUEST_INTERVAL_MS - Date.now()));
 		lastRequestAt = Date.now();
@@ -79,14 +80,37 @@ async function fetchTable(coordinates: LatLng[], sourceCount: number): Promise<T
 			const response = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(60_000) });
 			const body = await response.json().catch(() => null);
 			if (response.ok && body?.code === "Ok") return body;
-			const error = new Error(`${osrmUrl} returned ${response.status} ${body?.code ?? ""} ${body?.message ?? ""}`.trim());
-			if (response.status < 500 && response.status !== 429) throw Object.assign(error, { permanent: true });
-			throw error;
+			const message = `${osrmUrl} returned ${response.status} ${body?.code ?? ""} ${body?.message ?? ""}`.trim();
+			throw response.status < 500 && response.status !== 429 ? new PermanentError(message) : new Error(message);
 		} catch (error) {
-			if ((error as { permanent?: boolean }).permanent || attempt === MAX_ATTEMPTS) throw error;
+			if (error instanceof PermanentError || attempt === MAX_ATTEMPTS) throw error;
 			console.warn(`routing request failed (${(error as Error).message}); retrying`);
 			await sleep(ROUTE_REQUEST_INTERVAL_MS * 5 * attempt);
 		}
+	}
+}
+
+function fetchTable(coordinates: LatLng[], sourceCount: number) {
+	const indices = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i).join(";");
+	return osrmGet<Table>(
+		`${osrmUrl}/table/v1/bike/${coordinatePath(coordinates)}` +
+		`?sources=${indices(0, sourceCount)}&destinations=${indices(sourceCount, coordinates.length)}&annotations=distance`,
+	);
+}
+
+/**
+ * Returns the bike route from one point to another as a Google encoded polyline (precision 5),
+ * or null when the server rejects the request (for example, no route).
+ */
+export async function fetchRouteLine(from: LatLng, to: LatLng) {
+	try {
+		const body = await osrmGet<{ routes: { geometry: string }[] }>(
+			`${osrmUrl}/route/v1/bike/${coordinatePath([from, to])}?overview=full&geometries=polyline`,
+		);
+		return body.routes[0]?.geometry ?? null;
+	} catch (error) {
+		if (error instanceof PermanentError) return null;
+		throw error;
 	}
 }
 

@@ -73,6 +73,27 @@ export function segmentsIntersect([a, b]: Segment, [c, d]: Segment) {
 	return d1 * d2 < 0 && d3 * d4 < 0;
 }
 
+// Decodes a Google encoded polyline (precision 5)
+export function decodePolyline(encoded: string) {
+	const points: LatLng[] = [];
+	let index = 0, lat = 0, lng = 0;
+	const next = () => {
+		let result = 0, shift = 0, byte: number;
+		do {
+			byte = encoded.charCodeAt(index++) - 63;
+			result |= (byte & 0x1f) << shift;
+			shift += 5;
+		} while (byte >= 0x20);
+		return result & 1 ? ~(result >> 1) : result >> 1;
+	};
+	while (index < encoded.length) {
+		lat += next();
+		lng += next();
+		points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+	}
+	return points;
+}
+
 const NAME_NOISE = /\b(the|bed and breakfast|bed breakfast|b and b|bnb|bb|inn|llc|inc|co|company|restaurant|of|at|and)\b/g;
 
 export function normalizeName(name: string) {

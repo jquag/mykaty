@@ -14,7 +14,7 @@ import useColors from "@/hooks/use-colors";
 import useTrailSegment from "@/hooks/use-trail-segment";
 import { Place } from "@/types/Place";
 import { fitMapToCoordinates, isInRegion } from "@/utils/map";
-import { compareByTrailMile, isSearchQuery, searchPlaces } from "@/utils/pois";
+import { compareByTrailMile, getCategoryConfig, getPoiRouteCoordinates, isSearchQuery, searchPlaces } from "@/utils/pois";
 import { getMapDetailLevel, getSegmentCoordinates, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomSheet from "@gorhom/bottom-sheet";
@@ -29,6 +29,7 @@ const MEASURE_FIT_MARGIN = 40;
 const MAX_VISIBLE_POIS = 100;
 // Zoom used when selecting a place whose pin isn't shown at the current zoom, such as a search result
 const SELECTED_PLACE_DELTA = 0.04;
+const ROUTE_FIT_MARGIN = 50;
 
 export default function Index() {
 	const router = useRouter();
@@ -38,7 +39,8 @@ export default function Index() {
 	const colors = useColors();
 	const [selected, setSelected] = useState<Place | null>(null);
 	const [query, setQuery] = useState('');
-	const { pois, attribution, enabledCategories, allCategoriesEnabled } = usePois();
+	const { pois, routes, attribution, enabledCategories, allCategoriesEnabled } = usePois();
+	const [mapHeight, setMapHeight] = useState(0);
 
 	// Distance measuring state
 	const [measureMode, setMeasureMode] = useState(false);
@@ -102,6 +104,11 @@ export default function Index() {
 	const selectedWaypoint = selected?.kind === 'trailhead' ? selected.waypoint : null;
 	const selectedPoi = selected?.kind === 'poi' ? selected.poi : null;
 
+	const selectedRoute = useMemo(
+		() => (selectedPoi ? getPoiRouteCoordinates(selectedPoi, routes) : null),
+		[selectedPoi, routes]
+	);
+
 	// The selected POI stays on the map even when its category is off or the map has moved away
 	const poiMarkers = selectedPoi && !visiblePois.some(poi => poi.id === selectedPoi.id)
 		? [...visiblePois, selectedPoi]
@@ -138,13 +145,26 @@ export default function Index() {
 		const latOffset = (latitudeDelta * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT) / 2;
 		const { lat, lng } = place.kind === 'poi' ? place.poi : place.waypoint;
 
+		// Zoom out to show the whole route when it would extend under the sheet or off screen
+		const route = place.kind === 'poi' ? getPoiRouteCoordinates(place.poi, routes) : null;
+		const areaAboveSheet = { latitude: lat, longitude: lng, latitudeDelta: latitudeDelta * (1 - BOTTOM_SHEET_PARTIAL_OPEN_PERCENT), longitudeDelta };
+		if (route && !route.every(point => isInRegion({ lat: point.latitude, lng: point.longitude }, areaAboveSheet))) {
+			fitMapToCoordinates(mapRef.current, route, {
+				top: ROUTE_FIT_MARGIN,
+				right: ROUTE_FIT_MARGIN,
+				bottom: mapHeight * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT + ROUTE_FIT_MARGIN,
+				left: ROUTE_FIT_MARGIN,
+			});
+			return;
+		}
+
 		mapRef.current?.animateToRegion({
 			latitude: lat - latOffset,
 			longitude: lng,
 			latitudeDelta,
 			longitudeDelta,
 		}, 500);
-	}, [currentRegion]);
+	}, [currentRegion, routes, mapHeight]);
 
 	const handleClearSelection = useCallback(() => {
 		setSelected(null);
@@ -158,6 +178,7 @@ export default function Index() {
 				initialRegion={TRAIL_REGION}
 				onRegionChangeComplete={setCurrentRegion}
 				onPress={handleMapPress}
+				onLayout={(e) => setMapHeight(e.nativeEvent.layout.height)}
 				rotateEnabled={false}
 				style={{
 					flex: 1,
@@ -169,6 +190,15 @@ export default function Index() {
 					strokeColor={colors.accent()}
 					strokeWidth={4}
 				/>
+
+				{!measureMode && selectedPoi && selectedRoute && (
+					<Polyline
+						coordinates={selectedRoute}
+						strokeColor={getCategoryConfig(selectedPoi.category).color}
+						strokeWidth={5}
+						zIndex={1}
+					/>
+				)}
 
 				<TrailSegmentLayer segment={segment} showLabels={showLabels} />
 

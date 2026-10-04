@@ -39,15 +39,16 @@ AWS credentials and region come from the usual places (`~/.aws`, `AWS_PROFILE`, 
 
 ## What a run does
 
-1. Downloads the currently published `pois.json` from S3 and saves a copy to `out/pois.published.json`.
+1. Downloads the currently published `pois.json` from S3 and saves a copy to `out/pois.published.json`, and downloads the published `routes.json` for reuse.
 2. Looks up the latest Overture release and fetches the places inside the trail's bounding box, plus the Missouri River line.
 3. Filters, de-duplicates and annotates the places (see [Pipeline](#pipeline)).
 4. Measures each place's bike route from the trail (see [Route distances](#route-distances)). This takes about five minutes.
-5. Prints a report: totals, a per-trailhead table, coverage against the State Parks services grid in `constants/waypoints.ts`, and the changes versus the published file.
-6. Writes the output files to `out/`.
-7. Asks whether to publish. Only `y` or `yes` uploads; anything else does nothing.
+5. Fetches the route line for each new or re-routed place (see [Route lines](#route-lines)).
+6. Prints a report: totals, a per-trailhead table, coverage against the State Parks services grid in `constants/waypoints.ts`, and the changes versus the published file.
+7. Writes the output files to `out/`.
+8. Asks whether to publish. Only `y` or `yes` uploads; anything else does nothing.
 
-It skips the question when the bucket isn't set, when the new file is identical to the published one, or when it isn't running in a terminal (piped, cron, CI). In all three cases nothing is uploaded.
+It skips the question when the bucket isn't set, when the new files are identical to the published ones, or when it isn't running in a terminal (piped, cron, CI). In all three cases nothing is uploaded.
 
 ## Reviewing before you publish
 
@@ -72,8 +73,9 @@ All in `out/`, which is gitignored.
 | File | Uploaded | Purpose |
 |---|---|---|
 | `pois.json` | yes | The data the app uses. |
-| `manifest.json` | yes, last | Timestamp, count and SHA-256 of `pois.json`, so the app can check for updates without downloading the full file. |
-| `pois.geojson` | no | For viewing on geojson.io. |
+| `routes.json` | yes | The bike route from the trail to each place, for drawing on the map. |
+| `manifest.json` | yes, last | Timestamp, count and SHA-256 of `pois.json`, plus the same for `routes.json` under `routes`, so the app can check for updates without downloading the full files. |
+| `pois.geojson` | no | For viewing on geojson.io, with each place's route line in its category colour. |
 | `pois.published.json` | no | Copy of what is live on S3, for diffing. Deleted when there is no published file. |
 
 Each entry in `pois.json`:
@@ -96,6 +98,20 @@ Each entry in `pois.json`:
 
 The app must show the attribution string from the file (`© Overture Maps Foundation, © OpenStreetMap contributors`) somewhere, such as an about screen. That is the only licence requirement. The OpenStreetMap credit covers the route distances.
 
+`routes.json` shares `generatedAt` with `pois.json`:
+
+```jsonc
+{
+  "schemaVersion": 1,
+  "generatedAt": "…",
+  "routes": {
+    "…": "ezsnFbdvaP…"         // keyed by pois.json id: Google encoded polyline, precision 5
+  }
+}
+```
+
+A line starts where the rider leaves the trail (`trailIndex`) and ends on the road nearest the place, so it can stop up to 0.1 mi short of the marker. A place has no entry if the server couldn't return its line; the run lists these.
+
 ## Route distances
 
 `milesFromTrail` is the shortest bike route from the trail, so a place across a highway or up a long driveway shows its real distance. The script samples the trail every 0.2 mi, sends OSRM table requests from the samples within 2 mi of each place, and keeps the shortest. The winning sample becomes the place's `trailIndex`, `trailMile` and `nearestTrailhead`, so a place is listed where riders actually leave the trail. Places more than 2 mi away by bike are dropped, even when they are within 2 mi in a straight line.
@@ -103,6 +119,10 @@ The app must show the attribution string from the file (`© Overture Maps Founda
 OSRM moves each point onto the nearest way it can route a bike on. When that way is more than 0.1 mi from the place (typically a gas station on a highway bikes can't use), the place is treated as unreachable by bike and dropped, as are places OSRM finds no route to. The run lists every place dropped for having no route so you can check them; to keep one, move it onto its entrance with a `patch` in `overrides.json`.
 
 The public FOSSGIS server allows one request per second and no heavy use. A run makes about 30 requests, spaced a second apart, and retries failures with backoff. If the server is unavailable, the build stops instead of publishing straight-line distances. To use your own server instead, run OSRM in Docker with the bike profile on a Missouri extract from Geofabrik, then set `OSRM_URL`.
+
+## Route lines
+
+Each line takes its own request, so the first run with route lines makes about 900 of them, which takes about 17 minutes at one per second. After that, a place's line is copied from the published `routes.json` when its location, `trailIndex` and `milesFromTrail` (within 0.05 mi) are unchanged. Only new places and places whose route changed are fetched, usually a few dozen a run. Lines are only reused from a `routes.json` published alongside the current `pois.json`.
 
 ## Tuning
 

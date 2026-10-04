@@ -15,6 +15,8 @@ export const RIVER_NAME = "Missouri River";
 
 export const ROUTE_SAMPLE_MILES = 0.2;
 export const ROUTE_MAX_SNAP_MILES = 0.1;
+// A published route line is reused when the place, its trail exit, and its distance (within this) are unchanged
+export const ROUTE_LINE_REUSE_MILES = 0.05;
 // The public FOSSGIS server allows one request per second and OSRM's default table limit is 100 coordinates
 export const ROUTE_REQUEST_INTERVAL_MS = 1100;
 export const ROUTE_TABLE_MAX_COORDS = 100;
@@ -25,6 +27,7 @@ export const MAX_CATEGORY_DROP = 0.3;
 
 export const S3_POIS_KEY = "pois.json";
 export const S3_MANIFEST_KEY = "manifest.json";
+export const S3_ROUTES_KEY = "routes.json";
 export const S3_CACHE_CONTROL = "public, max-age=3600";
 
 // Overture primary category -> [app category, subcategory]

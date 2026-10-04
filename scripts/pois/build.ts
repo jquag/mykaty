@@ -13,16 +13,18 @@ import {
 	MAX_CATEGORY_DROP,
 	MAX_TOTAL_DROP,
 	MIN_CONFIDENCE,
+	ROUTE_LINE_REUSE_MILES,
 	S3_MANIFEST_KEY,
 	S3_POIS_KEY,
+	S3_ROUTES_KEY,
 	SCHEMA_VERSION,
 	categorize,
 } from "./config.ts";
 import type { PoiCategory } from "./config.ts";
-import { boundingBox, cumulativeMiles, haversineMiles, nearestOnLine, normalizeName, segmentsIntersect } from "./geo.ts";
+import { boundingBox, cumulativeMiles, decodePolyline, haversineMiles, nearestOnLine, normalizeName, segmentsIntersect } from "./geo.ts";
 import type { LatLng } from "./geo.ts";
 import { fetchOverture } from "./overture.ts";
-import { routeFromTrail, routingServer } from "./routes.ts";
+import { fetchRouteLine, routeFromTrail, routingServer } from "./routes.ts";
 import { downloadPublished, s3Configured, s3Target, uploadJson } from "./s3.ts";
 
 interface Poi {
@@ -52,6 +54,18 @@ interface PoiFile {
 	pois: Poi[];
 }
 
+// Bike route from each place's trail exit, keyed by place id, as Google encoded polylines (precision 5)
+interface RouteFile {
+	schemaVersion: number;
+	generatedAt: string;
+	routes: Record<string, string>;
+}
+
+interface Published {
+	pois: PoiFile;
+	routes: RouteFile | null;
+}
+
 interface BridgeZone extends LatLng {
 	name: string;
 	radiusMiles: number;
@@ -68,6 +82,7 @@ const DIR = import.meta.dirname;
 const OUT_DIR = join(DIR, "out");
 const POIS_PATH = join(OUT_DIR, S3_POIS_KEY);
 const MANIFEST_PATH = join(OUT_DIR, S3_MANIFEST_KEY);
+const ROUTES_PATH = join(OUT_DIR, S3_ROUTES_KEY);
 const GEOJSON_PATH = join(OUT_DIR, "pois.geojson");
 const PUBLISHED_PATH = join(OUT_DIR, "pois.published.json");
 
@@ -402,41 +417,90 @@ async function loadPublished() {
 		return null;
 	}
 	writeFileSync(PUBLISHED_PATH, body);
-	return JSON.parse(body) as PoiFile;
+	const routesBody = await downloadPublished(S3_ROUTES_KEY);
+	return {
+		pois: JSON.parse(body) as PoiFile,
+		routes: routesBody === null ? null : JSON.parse(routesBody) as RouteFile,
+	};
 }
 
-function writeOutputs(pois: Poi[], published: PoiFile | null) {
-	const unchanged = published !== null
-		&& published.overtureRelease === release
-		&& JSON.stringify(published.pois) === JSON.stringify(pois);
-	const file: PoiFile = {
-		schemaVersion: SCHEMA_VERSION,
-		generatedAt: unchanged ? published.generatedAt : new Date().toISOString(),
-		overtureRelease: release,
-		attribution: ATTRIBUTION,
-		pois,
+// Published lines are reused where the route can't have changed, so a run only asks the server for new or re-routed places
+async function buildRouteLines(pois: Poi[], published: Published | null) {
+	const publishedRoutes = published?.routes?.generatedAt === published?.pois.generatedAt ? published?.routes?.routes ?? {} : {};
+	const publishedPois = new Map(published?.pois.pois.map(p => [p.id, p]));
+	const reusable = (poi: Poi) => {
+		const before = publishedPois.get(poi.id);
+		return before !== undefined
+			&& poi.id in publishedRoutes
+			&& before.lat === poi.lat
+			&& before.lng === poi.lng
+			&& before.trailIndex === poi.trailIndex
+			&& Math.abs(before.milesFromTrail - poi.milesFromTrail) <= ROUTE_LINE_REUSE_MILES;
 	};
+
+	const toFetch = pois.filter(poi => !reusable(poi));
+	console.log(`\nroute lines: reusing ${pois.length - toFetch.length} published, fetching ${toFetch.length}`);
+	const fetched = new Map<string, string>();
+	const missing: Poi[] = [];
+	for (const [n, poi] of toFetch.entries()) {
+		process.stdout.write(`\rroute lines ${n + 1}/${toFetch.length}`);
+		const line = await fetchRouteLine(trailPoints[poi.trailIndex], poi);
+		if (line) fetched.set(poi.id, line);
+		else missing.push(poi);
+	}
+	if (toFetch.length) process.stdout.write("\n");
+	for (const poi of missing) console.log(`  !! no route line for ${poi.name} (${poi.nearestTrailhead})`);
+
+	const routes: Record<string, string> = {};
+	for (const poi of pois) {
+		const line = fetched.get(poi.id) ?? (reusable(poi) ? publishedRoutes[poi.id] : undefined);
+		if (line) routes[poi.id] = line;
+	}
+	return routes;
+}
+
+function writeOutputs(pois: Poi[], routes: Record<string, string>, published: Published | null) {
+	const unchanged = published !== null
+		&& published.pois.overtureRelease === release
+		&& JSON.stringify(published.pois.pois) === JSON.stringify(pois)
+		&& published.routes?.generatedAt === published.pois.generatedAt
+		&& JSON.stringify(published.routes.routes) === JSON.stringify(routes);
+	const generatedAt = unchanged ? published.pois.generatedAt : new Date().toISOString();
+	const file: PoiFile = { schemaVersion: SCHEMA_VERSION, generatedAt, overtureRelease: release, attribution: ATTRIBUTION, pois };
+	const routeFile: RouteFile = { schemaVersion: SCHEMA_VERSION, generatedAt, routes };
 	const body = JSON.stringify(file, null, 1) + "\n";
+	const routesBody = JSON.stringify(routeFile, null, 1) + "\n";
+	const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
 	const manifest = {
 		schemaVersion: SCHEMA_VERSION,
-		generatedAt: file.generatedAt,
-		sha256: createHash("sha256").update(body).digest("hex"),
+		generatedAt,
+		sha256: sha256(body),
 		count: pois.length,
 		file: S3_POIS_KEY,
+		routes: { file: S3_ROUTES_KEY, sha256: sha256(routesBody), count: Object.keys(routes).length },
 	};
 	const geojson = {
 		type: "FeatureCollection",
-		features: pois.map(({ lat, lng, ...properties }) => ({
-			type: "Feature",
-			geometry: { type: "Point", coordinates: [lng, lat] },
-			properties: { ...properties, "marker-color": MARKER_COLORS[properties.category] },
-		})),
+		features: pois.flatMap(({ lat, lng, ...properties }) => [
+			{
+				type: "Feature",
+				geometry: { type: "Point", coordinates: [lng, lat] },
+				properties: { ...properties, "marker-color": MARKER_COLORS[properties.category] },
+			},
+			...(routes[properties.id] ? [{
+				type: "Feature",
+				geometry: { type: "LineString", coordinates: decodePolyline(routes[properties.id]).map(p => [p.lng, p.lat]) },
+				properties: { name: properties.name, stroke: MARKER_COLORS[properties.category] },
+			}] : []),
+		]),
 	};
 
 	writeFileSync(POIS_PATH, body);
+	writeFileSync(ROUTES_PATH, routesBody);
 	writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 1) + "\n");
 	writeFileSync(GEOJSON_PATH, JSON.stringify(geojson) + "\n");
 	console.log(`\nwrote ${relative(process.cwd(), POIS_PATH)} (${(body.length / 1024).toFixed(0)} KB)`);
+	console.log(`wrote ${relative(process.cwd(), ROUTES_PATH)} (${(routesBody.length / 1024).toFixed(0)} KB)`);
 	return unchanged;
 }
 
@@ -452,11 +516,12 @@ async function confirm(question: string) {
 
 const published = await loadPublished();
 const pois = await buildPois();
-const warnings = published ? checkDrops(pois, published.pois) : [];
+const routes = await buildRouteLines(pois, published);
+const warnings = published ? checkDrops(pois, published.pois.pois) : [];
 report(pois);
-if (published) reportChanges(pois, published, warnings);
+if (published) reportChanges(pois, published.pois, warnings);
 
-const unchanged = writeOutputs(pois, published);
+const unchanged = writeOutputs(pois, routes, published);
 if (published) console.log(`compare: vimdiff ${relative(process.cwd(), PUBLISHED_PATH)} ${relative(process.cwd(), POIS_PATH)}`);
 
 if (!s3Configured) process.exit(0);
@@ -475,6 +540,7 @@ const question = warnings.length ? `The counts dropped sharply. Publish to ${s3T
 if (await confirm(question)) {
 	// The manifest goes last so clients never see a hash for a file that isn't there yet
 	await uploadJson(S3_POIS_KEY, readFileSync(POIS_PATH, "utf8"));
+	await uploadJson(S3_ROUTES_KEY, readFileSync(ROUTES_PATH, "utf8"));
 	await uploadJson(S3_MANIFEST_KEY, readFileSync(MANIFEST_PATH, "utf8"));
 } else {
 	console.log("not published");

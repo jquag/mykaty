@@ -291,6 +291,8 @@ export default function Index() {
 				ref={listSheetRef}
 				places={selected ? [] : listPlaces}
 				emptyMessage={emptyMessage}
+				// An empty list already says to zoom in
+				showZoomHint={!searching && !showPois && enabledCategories.size > 0 && listPlaces.length > 0}
 				query={query}
 				onQueryChange={setQuery}
 				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}

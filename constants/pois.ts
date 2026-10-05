@@ -35,6 +35,14 @@ export interface PoiManifest {
 	sha256: string;
 	count: number;
 	file: string;
+	routes?: { file: string; sha256: string; count: number };
+}
+
+// Bike route from each place's trail exit, keyed by place id, as Google encoded polylines (precision 5)
+export interface PoiRouteFile {
+	schemaVersion: number;
+	generatedAt: string;
+	routes: Record<string, string>;
 }
 
 export const POI_BASE_URL = 'https://d1z2mt0madk0y1.cloudfront.net/pois';

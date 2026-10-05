@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PoiCategory, PoiFile } from '@/constants/pois';
+import { PoiCategory, PoiFile, PoiRouteFile } from '@/constants/pois';
 import { Trip } from '@/types/Trip';
 
 const TRIP_PREFIX = 'trip_';
 const POIS_FILE_KEY = 'pois_file';
 const POIS_SHA_KEY = 'pois_sha';
+const POI_ROUTES_FILE_KEY = 'poi_routes_file';
+const POI_ROUTES_SHA_KEY = 'poi_routes_sha';
 const POIS_CHECKED_AT_KEY = 'pois_checked_at';
 const POI_CATEGORIES_KEY = 'poi_categories';
 
@@ -45,6 +47,16 @@ export async function getCachedPois(): Promise<{ file: PoiFile; sha: string } | 
 
 export async function saveCachedPois(fileJson: string, sha: string): Promise<void> {
   await AsyncStorage.multiSet([[POIS_FILE_KEY, fileJson], [POIS_SHA_KEY, sha]]);
+}
+
+export async function getCachedPoiRoutes(): Promise<{ file: PoiRouteFile; sha: string } | null> {
+  const [[, fileJson], [, sha]] = await AsyncStorage.multiGet([POI_ROUTES_FILE_KEY, POI_ROUTES_SHA_KEY]);
+  if (!fileJson || !sha) return null;
+  return { file: JSON.parse(fileJson), sha };
+}
+
+export async function saveCachedPoiRoutes(fileJson: string, sha: string): Promise<void> {
+  await AsyncStorage.multiSet([[POI_ROUTES_FILE_KEY, fileJson], [POI_ROUTES_SHA_KEY, sha]]);
 }
 
 export async function getPoisCheckedAt(): Promise<number | null> {

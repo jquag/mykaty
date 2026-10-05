@@ -2,6 +2,9 @@
   "remove": [
     { "id": "04f3a8e2-ed7e-4412-8f50-f8f22660dedf", "reason": "Trailhead Brewing, St. Charles: closed" }
   ],
-  "patch": {},
+  "patch": {
+    "ec9101f8-5f8b-42ed-98cf-7b33f81ed001": { "lat": 38.951075, "lng": -92.739825, "reason": "Walmart Bakery, Boonville: moved to the Walmart Pharmacy point because the store's own point is too far from a bikeable road to route" },
+    "636ef45a-36d5-4e3d-b4d8-d627fd5a8904": { "lat": 38.951075, "lng": -92.739825, "reason": "Subway inside Walmart, Boonville: moved to the Walmart Pharmacy point because the store's own point is too far from a bikeable road to route" }
+  },
   "add": []
 }

@@ -16,6 +16,8 @@ export const BOTTOM_SHEET_COLLAPSED_HEIGHT = 78;
 interface Props {
 	places: Place[];
 	emptyMessage: string;
+	// Shown beside the category controls when the selected categories aren't drawn at this zoom
+	showZoomHint: boolean;
 	query: string;
 	onQueryChange: (query: string) => void;
 	onPlaceSelected: (place: Place) => void;
@@ -25,6 +27,7 @@ interface Props {
 const MapListSheet = forwardRef<BottomSheet, Props>(({
 	places,
 	emptyMessage,
+	showZoomHint,
 	query,
 	onQueryChange,
 	onPlaceSelected,
@@ -92,16 +95,22 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 						/>
 					))}
 				</ScrollView>
-				<Pressable
-					onPress={() => setCategoriesEnabled(allCategoriesEnabled ? [] : POI_CATEGORIES.map(category => category.key))}
-					hitSlop={8}
-					accessibilityRole="button"
-					style={styles.selectAll}
-				>
-					<AppText style={[styles.selectAllLabel, { color: colors.primary() }]}>
-						{allCategoriesEnabled ? 'Unselect all' : 'Select all'}
-					</AppText>
-				</Pressable>
+				<View style={styles.categoryActions}>
+					<Pressable
+						onPress={() => setCategoriesEnabled(allCategoriesEnabled ? [] : POI_CATEGORIES.map(category => category.key))}
+						hitSlop={8}
+						accessibilityRole="button"
+					>
+						<AppText style={[styles.selectAllLabel, { color: colors.primary() }]}>
+							{allCategoriesEnabled ? 'Unselect all' : 'Select all'}
+						</AppText>
+					</Pressable>
+					{showZoomHint && (
+						<AppText style={[styles.zoomHint, { color: colors.text(0.6) }]}>
+							Zoom in to see places
+						</AppText>
+					)}
+				</View>
 			</View>
 			<View style={styles.listContainer}>
 				{places.length > 0 ? (
@@ -189,13 +198,18 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		borderWidth: 1,
 	},
-	selectAll: {
-		alignSelf: 'flex-start',
+	categoryActions: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
 		marginHorizontal: 16,
 	},
 	selectAllLabel: {
 		fontSize: 14,
 		fontWeight: '600',
+	},
+	zoomHint: {
+		fontSize: 14,
 	},
 	chipLabel: {
 		fontSize: 14,

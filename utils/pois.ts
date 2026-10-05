@@ -7,12 +7,15 @@ import {
 	PoiCategory,
 	PoiFile,
 	PoiManifest,
+	PoiRouteFile,
 	SUBCATEGORY_LABELS,
 } from '@/constants/pois';
 import { waypoints } from '@/constants/waypoints';
 import { Place } from '@/types/Place';
-import { saveCachedPois } from '@/utils/storage';
-import { getWaypointTrailMile } from '@/utils/trail';
+import { decodePolyline } from '@/utils/map';
+import { saveCachedPoiRoutes, saveCachedPois } from '@/utils/storage';
+import { getWaypointTrailMile, trailCoordinates } from '@/utils/trail';
+import type { LatLng } from 'react-native-maps';
 
 const MIN_QUERY_LENGTH = 2;
 const MAX_SEARCH_RESULTS = 50;
@@ -24,26 +27,53 @@ async function fetchOk(url: string) {
 	return response;
 }
 
+// CDN caches expire independently, so a fresh manifest can arrive alongside a stale file
+async function fetchManifestFile<T extends { generatedAt: string }>(file: string, manifest: PoiManifest) {
+	const json = await (await fetchOk(`${POI_BASE_URL}/${file}`)).text();
+	const parsed: T = JSON.parse(json);
+	if (parsed.generatedAt !== manifest.generatedAt) {
+		throw new Error(`${file} does not match the manifest`);
+	}
+	return { json, parsed };
+}
+
 /**
- * Downloads and caches pois.json when the published manifest differs from the cached copy.
- * Returns the new file, or null when there is nothing newer this app version can use.
+ * Downloads and caches pois.json and routes.json when the published manifest differs from the cached copies.
+ * Each result is null when there is nothing newer this app version can use.
  */
-export async function fetchPoisIfChanged(cachedSha: string | undefined): Promise<PoiFile | null> {
+export async function fetchPoiDataIfChanged(
+	cachedPoisSha: string | undefined,
+	cachedRoutesSha: string | undefined,
+): Promise<{ pois: PoiFile | null; routes: PoiRouteFile | null }> {
 	const manifest: PoiManifest = await (await fetchOk(`${POI_BASE_URL}/manifest.json`)).json();
 	if (manifest.schemaVersion !== POI_SCHEMA_VERSION) {
 		console.warn(`Skipping POI schema version ${manifest.schemaVersion}`);
-		return null;
+		return { pois: null, routes: null };
 	}
-	if (manifest.sha256 === cachedSha) return null;
 
-	const fileJson = await (await fetchOk(`${POI_BASE_URL}/${manifest.file}`)).text();
-	const file: PoiFile = JSON.parse(fileJson);
-	// CDN caches expire independently, so a fresh manifest can arrive alongside a stale file
-	if (file.generatedAt !== manifest.generatedAt) {
-		throw new Error('POI file does not match the manifest');
-	}
-	await saveCachedPois(fileJson, manifest.sha256);
-	return file;
+	const pois = manifest.sha256 === cachedPoisSha
+		? null
+		: await fetchManifestFile<PoiFile>(manifest.file, manifest);
+	const routes = !manifest.routes || manifest.routes.sha256 === cachedRoutesSha
+		? null
+		: await fetchManifestFile<PoiRouteFile>(manifest.routes.file, manifest);
+
+	if (pois) await saveCachedPois(pois.json, manifest.sha256);
+	if (routes && manifest.routes) await saveCachedPoiRoutes(routes.json, manifest.routes.sha256);
+	return { pois: pois?.parsed ?? null, routes: routes?.parsed ?? null };
+}
+
+/**
+ * A place's bike route, from its trail exit to the marker, or null when it has none
+ */
+export function getPoiRouteCoordinates(poi: Poi, routes: Record<string, string>): LatLng[] | null {
+	const encoded = routes[poi.id];
+	if (!encoded) return null;
+	return [
+		trailCoordinates[poi.trailIndex],
+		...decodePolyline(encoded),
+		{ latitude: poi.lat, longitude: poi.lng },
+	];
 }
 
 export function getCategoryConfig(category: PoiCategory) {

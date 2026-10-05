@@ -3,7 +3,7 @@ import SegmentStatusCard from "@/components/SegmentStatusCard";
 import TrailheadMarker from "@/components/TrailheadMarker";
 import DetailBottomSheet from "@/components/MapSheet/DetailBottomSheet";
 import PoiDetail from "@/components/MapSheet/PoiDetail";
-import MapListSheet, { BOTTOM_SHEET_COLLAPSED_HEIGHT } from "@/components/MapSheet/MapListSheet";
+import MapListSheet from "@/components/MapSheet/MapListSheet";
 import TrailheadDetail from "@/components/MapSheet/TrailheadDetail";
 import TrailSegmentLayer from "@/components/TrailSegmentLayer";
 import AppText from "@/components/ui/AppText";
@@ -45,7 +45,7 @@ export default function Index() {
 	// Distance measuring state
 	const [measureMode, setMeasureMode] = useState(false);
 	const segment = useTrailSegment();
-	const [measureOverlayBottom, setMeasureOverlayBottom] = useState(0);
+	const [measureOverlayTop, setMeasureOverlayTop] = useState(0);
 
 	const handleMapPress = (event: MapPressEvent) => {
 		if (!measureMode) return;
@@ -53,14 +53,13 @@ export default function Index() {
 		segment.selectAt(latitude, longitude);
 	};
 
-	// Zoom to fit the measured segment between the overlay and the collapsed bottom sheet
+	// Zoom to fit the measured segment above the overlay
 	const fitToMeasurement = () => {
 		if (segment.start === null || segment.end === null) return;
-		listSheetRef.current?.snapToIndex(0);
 		fitMapToCoordinates(mapRef.current, getSegmentCoordinates(segment.start, segment.end), {
-			top: measureOverlayBottom + MEASURE_FIT_MARGIN,
+			top: MEASURE_FIT_MARGIN,
 			right: MEASURE_FIT_MARGIN,
-			bottom: BOTTOM_SHEET_COLLAPSED_HEIGHT + MEASURE_FIT_MARGIN,
+			bottom: mapHeight - measureOverlayTop + MEASURE_FIT_MARGIN,
 			left: MEASURE_FIT_MARGIN,
 		});
 	};
@@ -72,6 +71,12 @@ export default function Index() {
 			params: { start: segment.start, end: segment.end },
 		});
 		segment.clear();
+	};
+
+	const enterMeasureMode = () => {
+		Keyboard.dismiss();
+		setSelected(null);
+		setMeasureMode(true);
 	};
 
 	const exitMeasureMode = () => {
@@ -227,13 +232,13 @@ export default function Index() {
 				}}
 			>
 				<Ionicons name="locate" size={18} color={colors.text()} />
-				{!measureMode && <AppText>Trail</AppText>}
+				<AppText>Trail</AppText>
 			</Pressable>
 
 			{/* Distance button */}
 			{!measureMode && (
 				<Pressable
-					onPress={() => setMeasureMode(true)}
+					onPress={enterMeasureMode}
 					style={{
 						position: 'absolute',
 						top: 60,
@@ -257,7 +262,7 @@ export default function Index() {
 					segment={segment}
 					onFit={fitToMeasurement}
 					style={styles.measureOverlay}
-					onLayout={(e) => setMeasureOverlayBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
+					onLayout={(e) => setMeasureOverlayTop(e.nativeEvent.layout.y)}
 					header={
 						<View style={styles.measureHeader}>
 							<View style={styles.measureRow}>
@@ -287,17 +292,19 @@ export default function Index() {
 				</SegmentStatusCard>
 			)}
 
-			<MapListSheet
-				ref={listSheetRef}
-				places={selected ? [] : listPlaces}
-				emptyMessage={emptyMessage}
-				// An empty list already says to zoom in
-				showZoomHint={!searching && !showPois && enabledCategories.size > 0 && listPlaces.length > 0}
-				query={query}
-				onQueryChange={setQuery}
-				partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
-				onPlaceSelected={handleSelect}
-			/>
+			{!measureMode && (
+				<MapListSheet
+					ref={listSheetRef}
+					places={selected ? [] : listPlaces}
+					emptyMessage={emptyMessage}
+					// An empty list already says to zoom in
+					showZoomHint={!searching && !showPois && enabledCategories.size > 0 && listPlaces.length > 0}
+					query={query}
+					onQueryChange={setQuery}
+					partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
+					onPlaceSelected={handleSelect}
+				/>
+			)}
 			{selected && (
 				<DetailBottomSheet
 					partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
@@ -315,9 +322,9 @@ export default function Index() {
 const styles = StyleSheet.create({
 	measureOverlay: {
 		position: 'absolute',
-		top: 20,
+		bottom: 16,
 		left: 16,
-		right: 58,
+		right: 16,
 	},
 	measureHeader: {
 		flexDirection: 'row',

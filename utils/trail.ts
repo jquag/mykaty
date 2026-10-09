@@ -1,10 +1,11 @@
 import { trailPoints } from "@/constants/trailPoints";
 import { Waypoint, waypoints } from "@/constants/waypoints";
+import type { Coordinate } from "@/types/Trip";
 import { haversineMiles } from "@/utils/map";
 
 // Longitude degrees are shorter than latitude degrees by cos(latitude), about 0.78 along the trail
 const LNG_SCALE = 0.78;
-const AT_WAYPOINT_MILES = 0.1;
+export const AT_WAYPOINT_MILES = 0.1;
 const WAYPOINT_SNAP_DEGREES = 0.001;
 const LABELS_MAX_LNG_DELTA = 0.9;
 const POIS_MAX_LNG_DELTA = 0.3;
@@ -14,20 +15,22 @@ export const trailCoordinates = trailPoints.map(point => ({
 	longitude: point.lng,
 }));
 
-export const TRAIL_REGION = computeTrailRegion();
+export const TRAIL_REGION = getTrailRegion();
 
 // Zoom thresholds use longitudeDelta: unlike latitudeDelta, it stays constant while panning a Mercator map
 const MARKERS_MAX_LNG_DELTA = TRAIL_REGION.longitudeDelta * 0.5;
 
 let cumulativeMiles: number[] | null = null;
 let waypointIndices: number[] | null = null;
+let indexByCoordinate: Map<string, number> | null = null;
 
-function computeTrailRegion() {
+export function getTrailRegion(startIndex = 0, endIndex = trailPoints.length - 1) {
 	let minLat = Infinity;
 	let maxLat = -Infinity;
 	let minLng = Infinity;
 	let maxLng = -Infinity;
-	for (const point of trailPoints) {
+	for (let i = Math.min(startIndex, endIndex); i <= Math.max(startIndex, endIndex); i++) {
+		const point = trailPoints[i];
 		if (point.lat < minLat) minLat = point.lat;
 		if (point.lat > maxLat) maxLat = point.lat;
 		if (point.lng < minLng) minLng = point.lng;
@@ -56,9 +59,28 @@ function getCumulativeMiles() {
 	return cumulativeMiles;
 }
 
-function getWaypointIndices() {
+export function getWaypointIndices() {
 	waypointIndices ??= waypoints.map(wp => nearestTrailIndex(wp.lat, wp.lng));
 	return waypointIndices;
+}
+
+function coordinateKey(point: Coordinate) {
+	return `${point.lat},${point.lng}`;
+}
+
+function buildIndexByCoordinate() {
+	const map = new Map<string, number>();
+	trailPoints.forEach((point, index) => {
+		const key = coordinateKey(point);
+		if (!map.has(key)) map.set(key, index);
+	});
+	return map;
+}
+
+// Saved trips copy their endpoints from trailPoints, so an exact lookup avoids scanning the whole trail
+export function trailIndexOf(point: Coordinate) {
+	indexByCoordinate ??= buildIndexByCoordinate();
+	return indexByCoordinate.get(coordinateKey(point)) ?? nearestTrailIndex(point.lat, point.lng);
 }
 
 export function isTrailIndex(index: number) {
@@ -68,6 +90,10 @@ export function isTrailIndex(index: number) {
 export function getTrailMiles(startIndex: number, endIndex: number) {
 	const miles = getCumulativeMiles();
 	return Math.abs(miles[endIndex] - miles[startIndex]);
+}
+
+export function getTotalTrailMiles() {
+	return getTrailMiles(0, trailPoints.length - 1);
 }
 
 export function getWaypointTrailMile(waypoint: Waypoint) {

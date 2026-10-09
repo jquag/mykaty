@@ -91,8 +91,23 @@ const TabBarBackground = () => {
 	}
 };
 
-export default function TabLayout() {
+const NewTripButton = () => {
 	const router = useRouter();
+	const colors = useColors();
+
+	return (
+		<Pressable
+			onPress={() => router.push('/new-trip')}
+			hitSlop={8}
+			accessibilityLabel="New trip"
+			style={{ marginRight: 16 }}
+		>
+			<Ionicons name="add-circle" size={28} color={colors.primary()} />
+		</Pressable>
+	);
+};
+
+export default function TabLayout() {
 	const colors = useColors();
 
 	return (
@@ -124,6 +139,17 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="index"
 				options={{
+					tabBarLabel: 'Home',
+					headerTitle: 'My Katy',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="home" size={size} color={color} />
+					),
+					headerRight: () => <NewTripButton />,
+				}}
+			/>
+			<Tabs.Screen
+				name="map"
+				options={{
 					tabBarLabel: 'Map',
 					headerTitle: 'Trail Map',
 					tabBarIcon: ({ color, size }) => (
@@ -139,16 +165,7 @@ export default function TabLayout() {
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="bicycle" size={size} color={color} />
 					),
-					headerRight: () => (
-						<Pressable
-							onPress={() => router.push('/new-trip')}
-							hitSlop={8}
-							accessibilityLabel="New trip"
-							style={{ marginRight: 16 }}
-						>
-							<Ionicons name="add-circle" size={28} color={colors.primary()} />
-						</Pressable>
-					),
+					headerRight: () => <NewTripButton />,
 				}}
 			/>
 		</Tabs>

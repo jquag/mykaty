@@ -8,9 +8,9 @@ import useColors from "@/hooks/use-colors";
 import useTrailSegment from "@/hooks/use-trail-segment";
 import { headerButtons } from "@/utils/header";
 import { fitMapToCoordinates } from "@/utils/map";
-import { getMapDetailLevel, getSegmentCoordinates, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
+import { getMapDetailLevel, getSegmentCoordinates, getTrailRegion, isTrailIndex, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
@@ -18,31 +18,49 @@ import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 
 const FIT_MARGIN = 40;
 
+function parseRoute(start?: string, end?: string) {
+	const startIndex = Number(start);
+	const endIndex = Number(end);
+	if (!isTrailIndex(startIndex) || !isTrailIndex(endIndex) || startIndex === endIndex) return undefined;
+	return { start: startIndex, end: endIndex };
+}
+
 export default function ChooseRoute() {
 	const router = useRouter();
 	const colors = useColors();
 	const mapRef = useRef<MapView>(null);
-	const segment = useTrailSegment();
+	const params = useLocalSearchParams<{ start?: string; end?: string; type?: string }>();
+	const [initialRoute] = useState(() => parseRoute(params.start, params.end));
+	const segment = useTrailSegment(initialRoute);
 	const [longitudeDelta, setLongitudeDelta] = useState<number>();
 	const [cardBottom, setCardBottom] = useState(0);
+	// A prefilled route is fitted once both the map and the card above it have laid out
+	const pendingFit = useRef({ mapReady: false, cardBottom: null as number | null, done: !initialRoute });
 
 	const { showLabels, showMarkers } = getMapDetailLevel(longitudeDelta);
 
-	const fitToSegment = () => {
+	const fitToSegment = (top = cardBottom) => {
 		if (segment.start === null || segment.end === null) return;
 		fitMapToCoordinates(mapRef.current, getSegmentCoordinates(segment.start, segment.end), {
-			top: cardBottom + FIT_MARGIN,
+			top: top + FIT_MARGIN,
 			right: FIT_MARGIN,
 			bottom: FIT_MARGIN,
 			left: FIT_MARGIN,
 		});
 	};
 
+	const fitInitialRoute = () => {
+		const pending = pendingFit.current;
+		if (pending.done || !pending.mapReady || pending.cardBottom === null) return;
+		pending.done = true;
+		fitToSegment(pending.cardBottom);
+	};
+
 	const goToDetails = () => {
 		if (segment.start === null || segment.end === null) return;
 		router.push({
 			pathname: '/new-trip/details',
-			params: { start: segment.start, end: segment.end },
+			params: { start: segment.start, end: segment.end, ...(params.type && { type: params.type }) },
 		});
 	};
 
@@ -57,7 +75,11 @@ export default function ChooseRoute() {
 			<MapView
 				ref={mapRef}
 				provider={PROVIDER_DEFAULT}
-				initialRegion={TRAIL_REGION}
+				initialRegion={initialRoute ? getTrailRegion(initialRoute.start, initialRoute.end) : TRAIL_REGION}
+				onMapReady={() => {
+					pendingFit.current.mapReady = true;
+					fitInitialRoute();
+				}}
 				onRegionChangeComplete={(region) => setLongitudeDelta(region.longitudeDelta)}
 				onPress={(e) => segment.selectAt(e.nativeEvent.coordinate.latitude, e.nativeEvent.coordinate.longitude)}
 				rotateEnabled={false}
@@ -78,9 +100,14 @@ export default function ChooseRoute() {
 
 			<SegmentStatusCard
 				segment={segment}
-				onFit={fitToSegment}
+				onFit={() => fitToSegment()}
 				style={styles.card}
-				onLayout={(e) => setCardBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
+				onLayout={(e) => {
+					const bottom = e.nativeEvent.layout.y + e.nativeEvent.layout.height;
+					setCardBottom(bottom);
+					pendingFit.current.cardBottom = bottom;
+					fitInitialRoute();
+				}}
 				header={
 					<View style={styles.cardHeader}>
 						<View style={styles.cardTitle}>

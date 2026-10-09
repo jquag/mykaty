@@ -30,11 +30,12 @@ export interface Waypoint {
   services?: TrailheadServices;
   contact?: TrailheadContact;
   notes?: string;
+  tidbit?: string;
 }
 
-// Note: Trailheads with modern restrooms/water are winterized Nov 1 - April 1
-// (restrooms closed, water turned off)
-// Source: Missouri State Parks Trail Services Grid
+// Trailheads with modern restrooms and water are winterized (restrooms closed, water off)
+// from Nov 1 up to Apr 1, as MM-DD. Source: Missouri State Parks Trail Services Grid
+export const WINTER_CLOSURE = { from: "11-01", until: "04-01" };
 
 export const waypoints: Waypoint[] = [
   // East to West (Machens to Clinton)
@@ -43,6 +44,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.33138,
     name: "Machens",
     image: "machens",
+    tidbit: "The trail's eastern end. There's no road access, so most people start a few miles west at Black Walnut.",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -65,6 +67,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.37178,
     name: "Black Walnut",
     image: "blackWalnut",
+    tidbit: "The easternmost trailhead with parking, about three miles from the trail's end at Machens.",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -86,6 +89,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.48389,
     name: "St. Charles",
     image: "saintCharles",
+    tidbit: "Missouri's first state capital, and where Lewis and Clark's expedition set off up the Missouri in 1804.",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -132,6 +136,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.74395,
     name: "Weldon Spring",
     image: "weldonSpring",
+    tidbit: "Near a former uranium processing site. You can climb its capped disposal cell for a view over the river valley.",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -153,6 +158,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.77970,
     name: "Defiance",
     image: "defiance",
+    tidbit: "Daniel Boone spent his last years nearby. His family's stone house is a few miles north of the trail.",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -178,6 +184,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.79485,
     name: "Matson",
     image: "matson",
+    tidbit: "Close to Klondike Park, a former sand quarry with bluff-top views of the Missouri River.",
     services: {
       foodGrocery: null,
       restaurant: "community",
@@ -204,6 +211,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.88107,
     name: "Augusta",
     image: "augusta",
+    tidbit: "In 1980 Augusta became the first federally recognized wine region in the United States.",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -229,6 +237,7 @@ export const waypoints: Waypoint[] = [
     lng: -90.99919,
     name: "Dutzow",
     image: "dutzow",
+    tidbit: "Settled by German immigrants in 1832, it's considered the oldest German town in Missouri.",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -250,6 +259,7 @@ export const waypoints: Waypoint[] = [
     lng: -91.06079,
     name: "Marthasville",
     image: "marthasville",
+    tidbit: "Daniel and Rebecca Boone were first buried near here, before their remains were moved to Kentucky.",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -296,6 +306,7 @@ export const waypoints: Waypoint[] = [
     lng: -91.44438,
     name: "McKittrick",
     image: "mcKittrick",
+    tidbit: "Hermann sits just across the river, an easy detour over the Route 19 bridge.",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -434,6 +445,7 @@ export const waypoints: Waypoint[] = [
     lng: -91.95904,
     name: "Tebbetts",
     image: "tebbetts",
+    tidbit: "Home to a trail shelter that offers simple bunkhouse lodging for people riding the whole trail.",
     services: {
       foodGrocery: null,
       restaurant: "community",
@@ -459,6 +471,7 @@ export const waypoints: Waypoint[] = [
     lng: -92.16225,
     name: "North Jefferson",
     image: "northJefferson",
+    tidbit: "A bike and pedestrian bridge crosses the Missouri River from here into Jefferson City and the Capitol.",
     services: {
       foodGrocery: "community",
       restaurant: "community",

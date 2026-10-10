@@ -11,6 +11,11 @@ export interface TrailInterval {
 	end: number;
 }
 
+/** A stretch of trail and how many trips covered it */
+export interface CoverageSegment extends TrailInterval {
+	count: number;
+}
+
 export interface TripSuggestion {
 	start: number;
 	end: number;
@@ -47,6 +52,29 @@ export function mergeIntervals(intervals: TrailInterval[]) {
 		}
 	}
 	return merged;
+}
+
+/** Splits the trail at every interval endpoint and counts how many intervals overlap each piece */
+export function coverageSegments(intervals: TrailInterval[]) {
+	const deltas = new Map<number, number>();
+	for (const { start, end } of intervals) {
+		deltas.set(start, (deltas.get(start) ?? 0) + 1);
+		deltas.set(end, (deltas.get(end) ?? 0) - 1);
+	}
+	const points = [...deltas.keys()].sort((a, b) => a - b);
+	const segments: CoverageSegment[] = [];
+	let count = 0;
+	for (let i = 0; i < points.length - 1; i++) {
+		count += deltas.get(points[i])!;
+		if (count === 0) continue;
+		const last = segments[segments.length - 1];
+		if (last && last.end === points[i] && last.count === count) {
+			last.end = points[i + 1];
+		} else {
+			segments.push({ start: points[i], end: points[i + 1], count });
+		}
+	}
+	return segments;
 }
 
 export function intervalsMiles(intervals: TrailInterval[]) {
@@ -134,7 +162,8 @@ export function summarizeProgress(completed: Trip[], upcoming: Trip[], filter: T
 	const done = completed.filter(matches);
 	const planned = upcoming.filter(matches);
 
-	const covered = mergeIntervals(done.map(tripInterval));
+	const doneIntervals = done.map(tripInterval);
+	const covered = mergeIntervals(doneIntervals);
 	const plannedIntervals = mergeIntervals(planned.map(tripInterval));
 	const coveredMiles = intervalsMiles(covered);
 	const totalMiles = getTotalTrailMiles();
@@ -147,6 +176,7 @@ export function summarizeProgress(completed: Trip[], upcoming: Trip[], filter: T
 	return {
 		tripCount: done.length,
 		covered,
+		coverage: coverageSegments(doneIntervals),
 		planned: plannedIntervals,
 		coveredMiles,
 		totalMiles,

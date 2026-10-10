@@ -1,5 +1,5 @@
 import AppText from "@/components/ui/AppText";
-import { TRIP_TYPES } from "@/constants/tripTypes";
+import { getTripTypeOption } from "@/constants/tripTypes";
 import useColors from "@/hooks/use-colors";
 import type { Trip } from "@/types/Trip";
 import { formatTripDate, getTripSummary } from "@/utils/trip-util";
@@ -13,7 +13,7 @@ interface Props {
 
 export default function TripListItem({ trip }: Props) {
 	const colors = useColors();
-	const icon = TRIP_TYPES.find(option => option.value === trip.type)?.icon ?? 'bike';
+	const { icon } = getTripTypeOption(trip.type);
 	const { title, miles } = useMemo(() => getTripSummary(trip), [trip]);
 
 	return (

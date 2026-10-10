@@ -2,6 +2,7 @@ import TripForm, { TripFormValues } from "@/components/forms/TripForm";
 import TripSummaryCard from "@/components/TripSummaryCard";
 import HeaderButton from "@/components/ui/HeaderButton";
 import { trailPoints } from "@/constants/trailPoints";
+import { parseTripType } from "@/constants/tripTypes";
 import { useTrips } from "@/contexts/TripsContext";
 import type { Trip } from "@/types/Trip";
 import { headerButtons } from "@/utils/header";
@@ -16,12 +17,12 @@ export default function TripDetails() {
 	const router = useRouter();
 	const navigation = useNavigation();
 	const { addTrip } = useTrips();
-	const params = useLocalSearchParams<{ start?: string; end?: string }>();
+	const params = useLocalSearchParams<{ start?: string; end?: string; type?: string }>();
 	const [saving, setSaving] = useState(false);
 	const [values, setValues] = useState<TripFormValues>(() => ({
 		title: '',
 		date: todayLocal(),
-		type: 'bike',
+		type: parseTripType(params.type) ?? 'bike',
 		isRoundTrip: false,
 		notes: '',
 	}));

@@ -45,7 +45,7 @@ export default function ProgressCard({ completed, upcoming }: Props) {
 		router.push({ pathname: '/new-trip', params: { ...route, ...(filterType && { type: filterType }) } });
 	};
 
-	const map = <TrailProgressMap covered={progress.covered} planned={progress.planned} reached={progress.reached} />;
+	const map = <TrailProgressMap coverage={progress.coverage} planned={progress.planned} />;
 
 	let body;
 	if (completed.length === 0 && upcoming.length === 0) {

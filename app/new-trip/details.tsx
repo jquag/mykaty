@@ -4,10 +4,10 @@ import HeaderButton from "@/components/ui/HeaderButton";
 import { trailPoints } from "@/constants/trailPoints";
 import { parseTripType } from "@/constants/tripTypes";
 import { useTrips } from "@/contexts/TripsContext";
-import type { Trip } from "@/types/Trip";
+import type { Coordinate, Trip } from "@/types/Trip";
 import { headerButtons } from "@/utils/header";
 import { generateTripId } from "@/utils/storage";
-import { isTrailIndex } from "@/utils/trail";
+import { isTrailIndex, trailIndexOf } from "@/utils/trail";
 import { getRouteName, getTripIndices, todayLocal } from "@/utils/trip-util";
 import { Redirect, Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useState } from "react";
@@ -24,13 +24,29 @@ function toFormValues(trip: Trip): TripFormValues {
 	};
 }
 
+// A point that wasn't moved keeps its saved coordinate rather than being snapped to the trail index
+function resolvePoint(index: number, saved?: Coordinate) {
+	return saved && trailIndexOf(saved) === index ? saved : { ...trailPoints[index] };
+}
+
 /** With an `id`, edits that trip; `start` and `end` then override its saved route */
 export default function TripDetails() {
+	const { trips, loading } = useTrips();
+	const { id } = useLocalSearchParams<{ id?: string }>();
+
+	if (!id) return <TripDetailsForm />;
+	if (loading) return null;
+
+	const trip = trips.find(t => t.id === id);
+	if (!trip) return <Redirect href="/trips" />;
+	return <TripDetailsForm trip={trip} />;
+}
+
+function TripDetailsForm({ trip }: { trip?: Trip }) {
 	const router = useRouter();
 	const navigation = useNavigation();
-	const { trips, addTrip, updateTrip } = useTrips();
+	const { addTrip, updateTrip } = useTrips();
 	const params = useLocalSearchParams<{ id?: string; start?: string; end?: string; type?: string }>();
-	const trip = params.id ? trips.find(t => t.id === params.id) : undefined;
 	const [saving, setSaving] = useState(false);
 	const [values, setValues] = useState<TripFormValues>(() => trip ? toFormValues(trip) : {
 		title: '',
@@ -39,10 +55,6 @@ export default function TripDetails() {
 		isRoundTrip: false,
 		notes: '',
 	});
-
-	if (params.id && !trip) {
-		return <Redirect href="/trips" />;
-	}
 
 	const savedRoute = trip && getTripIndices(trip);
 	const start = params.start ? Number(params.start) : savedRoute?.start ?? NaN;
@@ -64,8 +76,8 @@ export default function TripDetails() {
 			title: values.title.trim() || undefined,
 			date: values.date,
 			time: values.time,
-			start: { ...trailPoints[start] },
-			end: { ...trailPoints[end] },
+			start: resolvePoint(start, trip?.start),
+			end: resolvePoint(end, trip?.end),
 			type: values.type,
 			isRoundTrip: values.isRoundTrip,
 			notes: values.notes.trim() || undefined,

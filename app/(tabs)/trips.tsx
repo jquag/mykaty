@@ -63,7 +63,7 @@ export default function Trips() {
 				<Animated.View exiting={FadeOut}>
 					<SwipeToDelete onDelete={() => handleDelete(item)} onOpen={handleRowOpen}>
 						<View style={styles.row}>
-							<TripListItem trip={item} />
+							<TripListItem trip={item} onDelete={() => handleDelete(item)} />
 						</View>
 					</SwipeToDelete>
 				</Animated.View>

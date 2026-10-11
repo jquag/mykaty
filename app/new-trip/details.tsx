@@ -8,38 +8,59 @@ import type { Trip } from "@/types/Trip";
 import { headerButtons } from "@/utils/header";
 import { generateTripId } from "@/utils/storage";
 import { isTrailIndex } from "@/utils/trail";
-import { getRouteName, todayLocal } from "@/utils/trip-util";
+import { getRouteName, getTripIndices, todayLocal } from "@/utils/trip-util";
 import { Redirect, Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView } from "react-native";
 
+function toFormValues(trip: Trip): TripFormValues {
+	return {
+		title: trip.title ?? '',
+		date: trip.date,
+		time: trip.time,
+		type: trip.type,
+		isRoundTrip: trip.isRoundTrip,
+		notes: trip.notes ?? '',
+	};
+}
+
+/** With an `id`, edits that trip; `start` and `end` then override its saved route */
 export default function TripDetails() {
 	const router = useRouter();
 	const navigation = useNavigation();
-	const { addTrip } = useTrips();
-	const params = useLocalSearchParams<{ start?: string; end?: string; type?: string }>();
+	const { trips, addTrip, updateTrip } = useTrips();
+	const params = useLocalSearchParams<{ id?: string; start?: string; end?: string; type?: string }>();
+	const trip = params.id ? trips.find(t => t.id === params.id) : undefined;
 	const [saving, setSaving] = useState(false);
-	const [values, setValues] = useState<TripFormValues>(() => ({
+	const [values, setValues] = useState<TripFormValues>(() => trip ? toFormValues(trip) : {
 		title: '',
 		date: todayLocal(),
 		type: parseTripType(params.type) ?? 'bike',
 		isRoundTrip: false,
 		notes: '',
-	}));
+	});
 
-	const start = params.start ? Number(params.start) : NaN;
-	const end = params.end ? Number(params.end) : NaN;
+	if (params.id && !trip) {
+		return <Redirect href="/trips" />;
+	}
+
+	const savedRoute = trip && getTripIndices(trip);
+	const start = params.start ? Number(params.start) : savedRoute?.start ?? NaN;
+	const end = params.end ? Number(params.end) : savedRoute?.end ?? NaN;
 	if (!isTrailIndex(start) || !isTrailIndex(end) || start === end) {
 		return <Redirect href="/new-trip" />;
 	}
 
-	// Opened straight from the map tab, there is no route picker underneath to go back to
+	// Editing, or opened straight from the map tab: there is no route picker underneath to go back to
 	const isFirstScreen = navigation.getState()?.index === 0;
+
+	const changeRoute = () => {
+		router.push({ pathname: '/new-trip', params: { start, end, ...(params.id && { id: params.id }) } });
+	};
 
 	const handleSave = () => {
 		setSaving(true);
-		const trip: Trip = {
-			id: generateTripId(),
+		const fields = {
 			title: values.title.trim() || undefined,
 			date: values.date,
 			time: values.time,
@@ -48,10 +69,12 @@ export default function TripDetails() {
 			type: values.type,
 			isRoundTrip: values.isRoundTrip,
 			notes: values.notes.trim() || undefined,
-			createdAt: new Date().toISOString(),
 		};
-		addTrip(trip)
-			.then(() => router.dismissTo('/trips'))
+		const save = trip
+			? updateTrip({ ...trip, ...fields })
+			: addTrip({ ...fields, id: generateTripId(), createdAt: new Date().toISOString() });
+		save
+			.then(() => (trip ? router.back() : router.dismissTo('/trips')))
 			.catch((error) => {
 				console.error('Error saving trip:', error);
 				setSaving(false);
@@ -68,6 +91,7 @@ export default function TripDetails() {
 		>
 			<Stack.Screen
 				options={{
+					...(trip && { title: 'Edit Trip' }),
 					headerBackVisible: !isFirstScreen,
 					...headerButtons({
 						left: isFirstScreen
@@ -77,7 +101,12 @@ export default function TripDetails() {
 					}),
 				}}
 			/>
-			<TripSummaryCard startIndex={start} endIndex={end} isRoundTrip={values.isRoundTrip} />
+			<TripSummaryCard
+				startIndex={start}
+				endIndex={end}
+				isRoundTrip={values.isRoundTrip}
+				onChangeRoute={isFirstScreen ? changeRoute : undefined}
+			/>
 			<TripForm
 				values={values}
 				onChange={(patch) => setValues(prev => ({ ...prev, ...patch }))}

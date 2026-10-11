@@ -4,7 +4,8 @@ import useColors from "@/hooks/use-colors";
 import type { Trip } from "@/types/Trip";
 import { daysBetween, describeDaysUntil, formatTripDate, getTripSummary, toDateString } from "@/utils/trip-util";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Pressable, StyleSheet, View } from "react-native";
 
 interface Props {
 	trip: Trip;
@@ -13,12 +14,20 @@ interface Props {
 
 export default function NextTripCard({ trip, now }: Props) {
 	const colors = useColors();
+	const router = useRouter();
 	const { title, miles } = getTripSummary(trip);
 	const { icon } = getTripTypeOption(trip.type);
 	const when = describeDaysUntil(daysBetween(toDateString(now), trip.date));
 
 	return (
-		<View style={[styles.card, { backgroundColor: colors.primary(0.1), borderColor: colors.primary(0.3) }]}>
+		<Pressable
+			onPress={() => router.push({ pathname: '/new-trip/details', params: { id: trip.id } })}
+			accessibilityRole="button"
+			style={({ pressed }) => [
+				styles.card,
+				{ backgroundColor: colors.primary(0.1), borderColor: colors.primary(0.3), opacity: pressed ? 0.6 : 1 },
+			]}
+		>
 			<AppText style={[styles.label, { color: colors.primary() }]}>{`Next trip · ${when}`}</AppText>
 			<AppText style={styles.title} numberOfLines={2}>{title}</AppText>
 			<View style={styles.row}>
@@ -27,7 +36,7 @@ export default function NextTripCard({ trip, now }: Props) {
 					{`${formatTripDate(trip)} · ${miles.toFixed(1)} mi${trip.isRoundTrip ? ' round trip' : ''}`}
 				</AppText>
 			</View>
-		</View>
+		</Pressable>
 	);
 }
 

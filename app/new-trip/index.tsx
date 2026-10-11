@@ -10,7 +10,7 @@ import { headerButtons } from "@/utils/header";
 import { fitMapToCoordinates } from "@/utils/map";
 import { getMapDetailLevel, getSegmentCoordinates, getTrailRegion, isTrailIndex, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
@@ -27,9 +27,10 @@ function parseRoute(start?: string, end?: string) {
 
 export default function ChooseRoute() {
 	const router = useRouter();
+	const navigation = useNavigation();
 	const colors = useColors();
 	const mapRef = useRef<MapView>(null);
-	const params = useLocalSearchParams<{ start?: string; end?: string; type?: string }>();
+	const params = useLocalSearchParams<{ id?: string; start?: string; end?: string; type?: string }>();
 	const [initialRoute] = useState(() => parseRoute(params.start, params.end));
 	const segment = useTrailSegment(initialRoute);
 	const [longitudeDelta, setLongitudeDelta] = useState<number>();
@@ -38,6 +39,8 @@ export default function ChooseRoute() {
 	const pendingFit = useRef({ mapReady: false, cardBottom: null as number | null, done: !initialRoute });
 
 	const { showLabels, showMarkers } = getMapDetailLevel(longitudeDelta);
+	// Pushed from the details form to change its route, rather than starting a new trip
+	const isChangingRoute = (navigation.getState()?.index ?? 0) > 0;
 
 	const fitToSegment = (top = cardBottom) => {
 		if (segment.start === null || segment.end === null) return;
@@ -64,12 +67,27 @@ export default function ChooseRoute() {
 		});
 	};
 
+	const applyRoute = () => {
+		if (segment.start === null || segment.end === null) return;
+		router.dismissTo({
+			pathname: '/new-trip/details',
+			params: { start: segment.start, end: segment.end, ...(params.id && { id: params.id }) },
+		});
+	};
+
 	return (
 		<View style={{ flex: 1 }}>
 			<Stack.Screen
 				options={headerButtons({
 					left: <HeaderButton title="Cancel" onPress={() => router.back()} />,
-					right: <HeaderButton title="Next" emphasized disabled={!segment.isComplete} onPress={goToDetails} />,
+					right: (
+						<HeaderButton
+							title={isChangingRoute ? 'Done' : 'Next'}
+							emphasized
+							disabled={!segment.isComplete}
+							onPress={isChangingRoute ? applyRoute : goToDetails}
+						/>
+					),
 				})}
 			/>
 			<MapView

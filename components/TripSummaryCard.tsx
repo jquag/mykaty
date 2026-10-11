@@ -2,15 +2,16 @@ import AppText from "@/components/ui/AppText";
 import useColors from "@/hooks/use-colors";
 import { describeTrailPoint, getTrailMiles } from "@/utils/trail";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 interface Props {
 	startIndex: number;
 	endIndex: number;
 	isRoundTrip: boolean;
+	onChangeRoute?: () => void;
 }
 
-export default function TripSummaryCard({ startIndex, endIndex, isRoundTrip }: Props) {
+export default function TripSummaryCard({ startIndex, endIndex, isRoundTrip, onChangeRoute }: Props) {
 	const colors = useColors();
 	const oneWayMiles = getTrailMiles(startIndex, endIndex);
 
@@ -32,6 +33,11 @@ export default function TripSummaryCard({ startIndex, endIndex, isRoundTrip }: P
 						? `${(oneWayMiles * 2).toFixed(1)} mi round trip`
 						: `${oneWayMiles.toFixed(1)} mi`}
 				</AppText>
+				{onChangeRoute && (
+					<Pressable onPress={onChangeRoute} hitSlop={8} accessibilityRole="button" style={styles.changeRoute}>
+						<AppText style={[styles.link, { color: colors.primary() }]}>Change route</AppText>
+					</Pressable>
+				)}
 			</View>
 		</View>
 	);
@@ -54,5 +60,12 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		fontWeight: 'bold',
 		flexShrink: 1,
+	},
+	changeRoute: {
+		marginLeft: 'auto',
+	},
+	link: {
+		fontSize: 15,
+		fontWeight: '700',
 	},
 });

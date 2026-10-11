@@ -4,20 +4,31 @@ import useColors from "@/hooks/use-colors";
 import type { Trip } from "@/types/Trip";
 import { formatTripDate, getTripSummary } from "@/utils/trip-util";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
+import { Pressable } from "react-native-gesture-handler";
 
 interface Props {
 	trip: Trip;
+	/** Offered as an accessibility action, since a swipe to delete can't be performed with VoiceOver */
+	onDelete?: () => void;
 }
 
-export default function TripListItem({ trip }: Props) {
+export default function TripListItem({ trip, onDelete }: Props) {
 	const colors = useColors();
+	const router = useRouter();
 	const { icon } = getTripTypeOption(trip.type);
 	const { title, miles } = useMemo(() => getTripSummary(trip), [trip]);
 
 	return (
-		<View style={[styles.container, { borderBottomColor: colors.text(0.1) }]}>
+		<Pressable
+			onPress={() => router.push({ pathname: '/new-trip/details', params: { id: trip.id } })}
+			accessibilityRole="button"
+			accessibilityActions={onDelete && [{ name: 'delete', label: 'Delete' }]}
+			onAccessibilityAction={(e) => e.nativeEvent.actionName === 'delete' && onDelete?.()}
+			style={({ pressed }) => [styles.container, { borderBottomColor: colors.text(0.1), opacity: pressed ? 0.6 : 1 }]}
+		>
 			<View style={[styles.icon, { backgroundColor: colors.primary(0.15) }]}>
 				<MaterialCommunityIcons name={icon} size={22} color={colors.primary()} />
 			</View>
@@ -31,7 +42,7 @@ export default function TripListItem({ trip }: Props) {
 					<AppText style={{ fontSize: 12, color: colors.text(0.6) }}>round trip</AppText>
 				)}
 			</View>
-		</View>
+		</Pressable>
 	);
 }
 

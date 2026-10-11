@@ -1,15 +1,33 @@
 import TripListItem from "@/components/TripListItem";
 import AppText from "@/components/ui/AppText";
+import SwipeToDelete from "@/components/ui/SwipeToDelete";
 import { useTrips } from "@/contexts/TripsContext";
 import useColors from "@/hooks/use-colors";
+import type { Trip } from "@/types/Trip";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { useRef } from "react";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import Animated, { FadeOut, LinearTransition } from "react-native-reanimated";
 
 export default function Trips() {
 	const colors = useColors();
 	const router = useRouter();
-	const { trips, loading, loadFailed, reload } = useTrips();
+	const { trips, loading, loadFailed, reload, deleteTrip } = useTrips();
+	const openRow = useRef<SwipeableMethods | null>(null);
+
+	const handleRowOpen = (row: SwipeableMethods) => {
+		if (openRow.current !== row) openRow.current?.close();
+		openRow.current = row;
+	};
+
+	const handleDelete = (trip: Trip) => {
+		deleteTrip(trip.id).catch((error) => {
+			console.error('Error deleting trip:', error);
+			Alert.alert('Could not delete trip', 'Please try again.');
+		});
+	};
 
 	if (loading) {
 		return <View style={{ flex: 1, backgroundColor: colors.surface() }} />;
@@ -34,12 +52,22 @@ export default function Trips() {
 	}
 
 	return (
-		<FlatList
+		<Animated.FlatList
 			style={{ backgroundColor: colors.surface() }}
-			contentContainerStyle={styles.content}
+			contentContainerStyle={{ flexGrow: 1 }}
 			data={trips}
 			keyExtractor={(trip) => trip.id}
-			renderItem={({ item }) => <TripListItem trip={item} />}
+			itemLayoutAnimation={LinearTransition}
+			onScrollBeginDrag={() => openRow.current?.close()}
+			renderItem={({ item }) => (
+				<Animated.View exiting={FadeOut}>
+					<SwipeToDelete onDelete={() => handleDelete(item)} onOpen={handleRowOpen}>
+						<View style={styles.row}>
+							<TripListItem trip={item} onDelete={() => handleDelete(item)} />
+						</View>
+					</SwipeToDelete>
+				</Animated.View>
+			)}
 			ListEmptyComponent={
 				<View style={styles.empty}>
 					<MaterialCommunityIcons name="map-marker-path" size={48} color={colors.primary(0.6)} />
@@ -60,8 +88,7 @@ export default function Trips() {
 }
 
 const styles = StyleSheet.create({
-	content: {
-		flexGrow: 1,
+	row: {
 		paddingHorizontal: 16,
 	},
 	empty: {

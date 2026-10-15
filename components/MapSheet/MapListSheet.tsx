@@ -3,11 +3,11 @@ import { View, StyleSheet } from 'react-native';
 import { Pressable, ScrollView } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import { POI_CATEGORIES } from '@/constants/pois';
-import { usePois } from '@/contexts/PoisContext';
+import { POI_CATEGORIES, PoiCategory } from '@/constants/pois';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
 import { Place } from '@/types/Place';
+import { areAllCategoriesEnabled } from '@/utils/pois';
 import TrailheadListItem from './TrailheadListItem';
 import PoiListItem from './PoiListItem';
 
@@ -20,6 +20,8 @@ interface Props {
 	showZoomHint: boolean;
 	query: string;
 	onQueryChange: (query: string) => void;
+	enabledCategories: ReadonlySet<PoiCategory>;
+	onCategoriesChange: (categories: PoiCategory[]) => void;
 	onPlaceSelected: (place: Place) => void;
 	partialOpenHeight: string | number;
 }
@@ -30,11 +32,19 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 	showZoomHint,
 	query,
 	onQueryChange,
+	enabledCategories,
+	onCategoriesChange,
 	onPlaceSelected,
 	partialOpenHeight,
 }, ref) => {
 	const colors = useColors();
-	const { enabledCategories, allCategoriesEnabled, toggleCategory, setCategoriesEnabled } = usePois();
+	const allCategoriesEnabled = areAllCategoriesEnabled(enabledCategories);
+
+	const toggleCategory = (category: PoiCategory) => {
+		onCategoriesChange(enabledCategories.has(category)
+			? [...enabledCategories].filter(enabled => enabled !== category)
+			: [...enabledCategories, category]);
+	};
 
 	const snapPoints = useMemo(() => [BOTTOM_SHEET_COLLAPSED_HEIGHT, partialOpenHeight, '95%'], [partialOpenHeight]);
 	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(0);
@@ -97,7 +107,7 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 				</ScrollView>
 				<View style={styles.categoryActions}>
 					<Pressable
-						onPress={() => setCategoriesEnabled(allCategoriesEnabled ? [] : POI_CATEGORIES.map(category => category.key))}
+						onPress={() => onCategoriesChange(allCategoriesEnabled ? [] : POI_CATEGORIES.map(category => category.key))}
 						hitSlop={8}
 						accessibilityRole="button"
 					>

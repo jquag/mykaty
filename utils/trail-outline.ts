@@ -6,10 +6,14 @@ const PAD_X = 8;
 // Room above and below the trail for place labels
 const PAD_Y = 14;
 const MIN_POINT_SPACING = 1.5;
+// Room around a single stretch of trail for the markers drawn on it
+const SEGMENT_PAD = 14;
+const SEGMENT_MIN_HEIGHT = 100;
+const SEGMENT_MAX_HEIGHT = 160;
 // Longitude degrees shrink by cos(latitude); the trail sits near 38.7°N
 const LNG_SCALE = Math.cos(38.7 * Math.PI / 180);
 
-interface Point {
+export interface Point {
 	x: number;
 	y: number;
 }
@@ -42,9 +46,14 @@ function buildOutline(): Outline {
 		y: PAD_Y + (maxLat - trailPoints[index].lat) * scale,
 	});
 
-	const keptIndices = [0];
-	const keptPoints = [project(0)];
-	for (let i = 1; i < trailPoints.length - 1; i++) {
+	return { height, project, ...thin(project, 0, trailPoints.length - 1) };
+}
+
+// Drops points too close to the last kept one to show, always keeping both ends
+function thin(project: (index: number) => Point, from: number, to: number) {
+	const keptIndices = [from];
+	const keptPoints = [project(from)];
+	for (let i = from + 1; i < to; i++) {
 		const point = project(i);
 		const last = keptPoints[keptPoints.length - 1];
 		if (Math.hypot(point.x - last.x, point.y - last.y) >= MIN_POINT_SPACING) {
@@ -52,10 +61,9 @@ function buildOutline(): Outline {
 			keptPoints.push(point);
 		}
 	}
-	keptIndices.push(trailPoints.length - 1);
-	keptPoints.push(project(trailPoints.length - 1));
-
-	return { height, project, keptIndices, keptPoints };
+	keptIndices.push(to);
+	keptPoints.push(project(to));
+	return { keptIndices, keptPoints };
 }
 
 function getOutline() {
@@ -104,4 +112,38 @@ export function fullOutlinePath() {
 export function getWaypointPositions() {
 	const { project } = getOutline();
 	return getWaypointIndices().map(project);
+}
+
+/**
+ * A drawing of just the trail between two indices, scaled to fill OUTLINE_WIDTH.
+ * Its height follows the stretch's shape within limits, so an east-west stretch doesn't flatten into a line.
+ */
+export function getSegmentOutline(startIndex: number, endIndex: number) {
+	const from = Math.min(startIndex, endIndex);
+	const to = Math.max(startIndex, endIndex);
+	let minLat = Infinity;
+	let maxLat = -Infinity;
+	let minLng = Infinity;
+	let maxLng = -Infinity;
+	for (let i = from; i <= to; i++) {
+		minLat = Math.min(minLat, trailPoints[i].lat);
+		maxLat = Math.max(maxLat, trailPoints[i].lat);
+		minLng = Math.min(minLng, trailPoints[i].lng);
+		maxLng = Math.max(maxLng, trailPoints[i].lng);
+	}
+
+	const spanX = Math.max((maxLng - minLng) * LNG_SCALE, 1e-6);
+	const spanY = Math.max(maxLat - minLat, 1e-6);
+	const innerWidth = OUTLINE_WIDTH - SEGMENT_PAD * 2;
+	const height = Math.min(Math.max(spanY * innerWidth / spanX + SEGMENT_PAD * 2, SEGMENT_MIN_HEIGHT), SEGMENT_MAX_HEIGHT);
+	const scale = Math.min(innerWidth / spanX, (height - SEGMENT_PAD * 2) / spanY);
+	const offsetX = (OUTLINE_WIDTH - spanX * scale) / 2;
+	const offsetY = (height - spanY * scale) / 2;
+	const project = (index: number): Point => ({
+		x: offsetX + (trailPoints[index].lng - minLng) * LNG_SCALE * scale,
+		y: offsetY + (maxLat - trailPoints[index].lat) * scale,
+	});
+
+	const { keptPoints } = thin(project, from, to);
+	return { width: OUTLINE_WIDTH, height, path: `M${keptPoints.map(formatPoint).join('L')}`, project };
 }

@@ -1,4 +1,4 @@
-import { Poi, POI_CATEGORIES, POI_CHECK_INTERVAL_MS, POI_SCHEMA_VERSION, PoiCategory, PoiFile, PoiRouteFile } from "@/constants/pois";
+import { Poi, POI_CHECK_INTERVAL_MS, POI_SCHEMA_VERSION, PoiCategory, PoiFile, PoiRouteFile } from "@/constants/pois";
 import { fetchPoiDataIfChanged } from "@/utils/pois";
 import { getCachedPoiRoutes, getCachedPois, getPoiCategories, getPoisCheckedAt, savePoiCategories, savePoisCheckedAt } from "@/utils/storage";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -9,8 +9,6 @@ interface PoisContextType {
 	routes: Record<string, string>;
 	attribution: string | null;
 	enabledCategories: ReadonlySet<PoiCategory>;
-	allCategoriesEnabled: boolean;
-	toggleCategory: (category: PoiCategory) => void;
 	setCategoriesEnabled: (categories: PoiCategory[]) => void;
 }
 
@@ -78,16 +76,6 @@ export function PoisProvider({ children }: { children: ReactNode }) {
 		savePoiCategories(categories).catch(error => console.error('Error saving POI categories:', error));
 	}, []);
 
-	const toggleCategory = useCallback((category: PoiCategory) => {
-		const updatedCategories = new Set(enabledCategories);
-		if (updatedCategories.has(category)) {
-			updatedCategories.delete(category);
-		} else {
-			updatedCategories.add(category);
-		}
-		setCategoriesEnabled([...updatedCategories]);
-	}, [enabledCategories, setCategoriesEnabled]);
-
 	const value = useMemo(
 		() => ({
 			pois: file?.pois ?? NO_POIS,
@@ -95,11 +83,9 @@ export function PoisProvider({ children }: { children: ReactNode }) {
 			routes: routeFile && routeFile.generatedAt === file?.generatedAt ? routeFile.routes : NO_ROUTES,
 			attribution: file?.attribution ?? null,
 			enabledCategories,
-			allCategoriesEnabled: POI_CATEGORIES.every(category => enabledCategories.has(category.key)),
-			toggleCategory,
 			setCategoriesEnabled,
 		}),
-		[file, routeFile, enabledCategories, toggleCategory, setCategoriesEnabled]
+		[file, routeFile, enabledCategories, setCategoriesEnabled]
 	);
 
 	return <PoisContext.Provider value={value}>{children}</PoisContext.Provider>;

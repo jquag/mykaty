@@ -7,41 +7,33 @@ import MapListSheet from "@/components/MapSheet/MapListSheet";
 import TrailheadDetail from "@/components/MapSheet/TrailheadDetail";
 import TrailSegmentLayer from "@/components/TrailSegmentLayer";
 import AppText from "@/components/ui/AppText";
-import { Poi } from "@/constants/pois";
 import { waypoints } from "@/constants/waypoints";
 import { usePois } from "@/contexts/PoisContext";
 import useColors from "@/hooks/use-colors";
+import usePlaceMap, { PLACE_SHEET_PARTIAL_HEIGHT } from "@/hooks/use-place-map";
 import useTrailSegment from "@/hooks/use-trail-segment";
-import { Place } from "@/types/Place";
-import { fitMapToCoordinates, isInRegion } from "@/utils/map";
-import { compareByTrailMile, getCategoryConfig, getPoiRouteCoordinates, isSearchQuery, searchPlaces } from "@/utils/pois";
-import { getMapDetailLevel, getSegmentCoordinates, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
+import { fitMapToCoordinates } from "@/utils/map";
+import { getCategoryConfig } from "@/utils/pois";
+import { getSegmentCoordinates, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import BottomSheet from "@gorhom/bottom-sheet";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Keyboard, View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
-import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 
-const BOTTOM_SHEET_PARTIAL_OPEN_PERCENT = 0.4;
 const MEASURE_FIT_MARGIN = 40;
-const MAX_VISIBLE_POIS = 100;
-// Zoom used when selecting a place whose pin isn't shown at the current zoom, such as a search result
-const SELECTED_PLACE_DELTA = 0.04;
-const ROUTE_FIT_MARGIN = 50;
 
 export default function MapScreen() {
 	const router = useRouter();
 	const { trailhead } = useLocalSearchParams<{ trailhead?: string }>();
-	const mapRef = useRef<MapView>(null);
-	const listSheetRef = useRef<BottomSheet>(null);
-	const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
 	const colors = useColors();
-	const [selected, setSelected] = useState<Place | null>(null);
-	const [query, setQuery] = useState('');
-	const { pois, routes, attribution, enabledCategories, allCategoriesEnabled } = usePois();
-	const [mapHeight, setMapHeight] = useState(0);
+	const { attribution, enabledCategories, setCategoriesEnabled } = usePois();
+	const {
+		mapRef, listSheetRef, setRegion, mapHeight, setMapHeight, detailLevel,
+		selected, selectedPoi, selectedWaypoint, selectedRoute, select, clearSelection,
+		query, setQuery, poiMarkers, listPlaces, emptyMessage, showZoomHint,
+	} = usePlaceMap(enabledCategories);
 	const [mapReady, setMapReady] = useState(false);
 
 	// Distance measuring state
@@ -77,7 +69,7 @@ export default function MapScreen() {
 
 	const enterMeasureMode = () => {
 		Keyboard.dismiss();
-		setSelected(null);
+		clearSelection();
 		setMeasureMode(true);
 	};
 
@@ -86,96 +78,7 @@ export default function MapScreen() {
 		setMeasureMode(false);
 	};
 
-	const { showLabels, showMarkers, showPois } = getMapDetailLevel(currentRegion?.longitudeDelta);
-
-	// Filter waypoints to those visible in the current viewport
-	const visibleWaypoints = useMemo(() => {
-		if (!currentRegion || !showMarkers) return [];
-		return waypoints.filter(wp => isInRegion(wp, currentRegion));
-	}, [currentRegion, showMarkers]);
-
-	// POIs of the enabled categories in the viewport, limited to those nearest the center in busy towns.
-	// Categories without a chip only appear when every chip is on.
-	const visiblePois = useMemo(() => {
-		if (!currentRegion || !showPois || enabledCategories.size === 0) return [];
-		const inView = pois.filter(poi =>
-			(allCategoriesEnabled || enabledCategories.has(poi.category)) && isInRegion(poi, currentRegion));
-		if (inView.length <= MAX_VISIBLE_POIS) return inView;
-		const distanceFromCenter = (poi: Poi) =>
-			(poi.lat - currentRegion.latitude) ** 2 + (poi.lng - currentRegion.longitude) ** 2;
-		return inView
-			.sort((a, b) => distanceFromCenter(a) - distanceFromCenter(b))
-			.slice(0, MAX_VISIBLE_POIS);
-	}, [pois, enabledCategories, allCategoriesEnabled, currentRegion, showPois]);
-
-	const selectedWaypoint = selected?.kind === 'trailhead' ? selected.waypoint : null;
-	const selectedPoi = selected?.kind === 'poi' ? selected.poi : null;
-
-	const selectedRoute = useMemo(
-		() => (selectedPoi ? getPoiRouteCoordinates(selectedPoi, routes) : null),
-		[selectedPoi, routes]
-	);
-
-	// The selected POI stays on the map even when its category is off or the map has moved away
-	const poiMarkers = selectedPoi && !visiblePois.some(poi => poi.id === selectedPoi.id)
-		? [...visiblePois, selectedPoi]
-		: visiblePois;
-
-	const searching = isSearchQuery(query);
-	const listPlaces = useMemo(() => {
-		if (searching) return searchPlaces(query, pois);
-		const places: Place[] = [
-			...visibleWaypoints.map(waypoint => ({ kind: 'trailhead' as const, waypoint })),
-			...visiblePois.map(poi => ({ kind: 'poi' as const, poi })),
-		];
-		return places.sort(compareByTrailMile);
-	}, [searching, query, pois, visibleWaypoints, visiblePois]);
-
-	let emptyMessage = 'Zoom in to see trailheads';
-	if (searching) {
-		emptyMessage = 'No places match';
-	} else if (enabledCategories.size > 0) {
-		emptyMessage = showPois ? 'No trailheads or places here' : 'Zoom in to see trailheads and places';
-	}
-
-	// Offset the center so the marker appears in the visible area above the sheet
-	const handleSelect = useCallback((place: Place) => {
-		setSelected(place);
-		Keyboard.dismiss();
-		listSheetRef.current?.snapToIndex(0); // Minimize list sheet
-
-		const detailLevel = getMapDetailLevel(currentRegion?.longitudeDelta);
-		const pinShown = place.kind === 'poi' ? detailLevel.showPois : detailLevel.showMarkers;
-		const keepZoom = currentRegion !== null && pinShown;
-		const latitudeDelta = keepZoom ? currentRegion.latitudeDelta : SELECTED_PLACE_DELTA;
-		const longitudeDelta = keepZoom ? currentRegion.longitudeDelta : SELECTED_PLACE_DELTA;
-		const latOffset = (latitudeDelta * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT) / 2;
-		const { lat, lng } = place.kind === 'poi' ? place.poi : place.waypoint;
-
-		// Zoom out to show the whole route when it would extend under the sheet or off screen
-		const route = place.kind === 'poi' ? getPoiRouteCoordinates(place.poi, routes) : null;
-		const areaAboveSheet = { latitude: lat, longitude: lng, latitudeDelta: latitudeDelta * (1 - BOTTOM_SHEET_PARTIAL_OPEN_PERCENT), longitudeDelta };
-		if (route && !route.every(point => isInRegion({ lat: point.latitude, lng: point.longitude }, areaAboveSheet))) {
-			fitMapToCoordinates(mapRef.current, route, {
-				top: ROUTE_FIT_MARGIN,
-				right: ROUTE_FIT_MARGIN,
-				bottom: mapHeight * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT + ROUTE_FIT_MARGIN,
-				left: ROUTE_FIT_MARGIN,
-			});
-			return;
-		}
-
-		mapRef.current?.animateToRegion({
-			latitude: lat - latOffset,
-			longitude: lng,
-			latitudeDelta,
-			longitudeDelta,
-		}, 500);
-	}, [currentRegion, routes, mapHeight]);
-
-	const handleClearSelection = useCallback(() => {
-		setSelected(null);
-	}, []);
+	const { showLabels, showMarkers } = detailLevel;
 
 	// Other tabs focus a trailhead by navigating here with its name; the camera only moves once the map is ready
 	useFocusEffect(useCallback(() => {
@@ -186,8 +89,8 @@ export default function MapScreen() {
 		segment.clear();
 		setMeasureMode(false);
 		setQuery('');
-		handleSelect({ kind: 'trailhead', waypoint });
-	}, [trailhead, mapReady, router, segment, handleSelect]));
+		select({ kind: 'trailhead', waypoint });
+	}, [trailhead, mapReady, router, segment, setQuery, select]));
 
   return (
     <View style={{flex: 1}}>
@@ -196,7 +99,7 @@ export default function MapScreen() {
 				provider={PROVIDER_DEFAULT}
 				initialRegion={TRAIL_REGION}
 				onMapReady={() => setMapReady(true)}
-				onRegionChangeComplete={setCurrentRegion}
+				onRegionChangeComplete={setRegion}
 				onPress={handleMapPress}
 				onLayout={(e) => setMapHeight(e.nativeEvent.layout.height)}
 				rotateEnabled={false}
@@ -224,11 +127,11 @@ export default function MapScreen() {
 
 				{/* Hidden while measuring so dense town pins don't block taps on the trail */}
 				{!measureMode && poiMarkers.map(poi => (
-					<PoiMarker key={poi.id} poi={poi} focused={selectedPoi?.id === poi.id} onPress={() => handleSelect({ kind: 'poi', poi })} />
+					<PoiMarker key={poi.id} poi={poi} focused={selectedPoi?.id === poi.id} onPress={() => select({ kind: 'poi', poi })} />
 				))}
 
 				{showMarkers && (!measureMode || showLabels) ? waypoints.map((waypoint, index) => (
-					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedWaypoint === waypoint} focused={selectedWaypoint === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => handleSelect({ kind: 'trailhead', waypoint })} />
+					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedWaypoint === waypoint} focused={selectedWaypoint === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => select({ kind: 'trailhead', waypoint })} />
 				)) : null}
 			</MapView>
 			{/* Trail button */}
@@ -312,18 +215,19 @@ export default function MapScreen() {
 					ref={listSheetRef}
 					places={selected ? [] : listPlaces}
 					emptyMessage={emptyMessage}
-					// An empty list already says to zoom in
-					showZoomHint={!searching && !showPois && enabledCategories.size > 0 && listPlaces.length > 0}
+					showZoomHint={showZoomHint}
 					query={query}
 					onQueryChange={setQuery}
-					partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
-					onPlaceSelected={handleSelect}
+					enabledCategories={enabledCategories}
+					onCategoriesChange={setCategoriesEnabled}
+					partialOpenHeight={PLACE_SHEET_PARTIAL_HEIGHT}
+					onPlaceSelected={select}
 				/>
 			)}
 			{selected && (
 				<DetailBottomSheet
-					partialOpenHeight={BOTTOM_SHEET_PARTIAL_OPEN_PERCENT * 100 + '%'}
-					onClose={handleClearSelection}
+					partialOpenHeight={PLACE_SHEET_PARTIAL_HEIGHT}
+					onClose={clearSelection}
 				>
 					{selected.kind === 'poi'
 						? <PoiDetail poi={selected.poi} attribution={attribution} />

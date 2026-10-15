@@ -21,6 +21,7 @@ export default function NewTripLayout() {
 		>
 			<Stack.Screen name="index" options={{ title: 'Choose Route' }} />
 			<Stack.Screen name="details" options={{ title: 'Trip Details', headerBackTitle: 'Route' }} />
+			<Stack.Screen name="add-stop" options={{ title: 'Add Stop', headerBackTitle: 'Trip' }} />
 		</Stack>
 	);
 }

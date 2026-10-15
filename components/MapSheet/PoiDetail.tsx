@@ -1,7 +1,7 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { Poi } from '@/constants/pois';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
@@ -16,9 +16,11 @@ import {
 interface Props {
 	poi: Poi;
 	attribution: string | null;
+	// Shown under the header, outside the scrolling content, so it stays visible when the sheet is partly open
+	accessory?: ReactNode;
 }
 
-export default function PoiDetail({ poi, attribution }: Props) {
+export default function PoiDetail({ poi, attribution, accessory }: Props) {
 	const colors = useColors();
 	const category = getCategoryConfig(poi.category);
 	const { phone, website, address } = poi;
@@ -37,6 +39,7 @@ export default function PoiDetail({ poi, attribution }: Props) {
 					{formatMilesFromTrail(poi.milesFromTrail)} · near {poi.nearestTrailhead}
 				</AppText>
 			</View>
+			{accessory}
 
 			<BottomSheetScrollView style={detailStyles.scrollView}>
 				<View style={styles.actions}>

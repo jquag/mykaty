@@ -80,6 +80,10 @@ export function getCategoryConfig(category: PoiCategory) {
 	return POI_CATEGORIES.find(config => config.key === category) ?? OTHER_POI_CATEGORY;
 }
 
+export function areAllCategoriesEnabled(enabledCategories: ReadonlySet<PoiCategory>) {
+	return POI_CATEGORIES.every(category => enabledCategories.has(category.key));
+}
+
 export function getSubcategoryLabel(poi: Poi) {
 	return SUBCATEGORY_LABELS[poi.category]?.[poi.subcategory] ?? getCategoryConfig(poi.category).label;
 }

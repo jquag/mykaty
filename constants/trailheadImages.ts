@@ -24,6 +24,10 @@ const trailheadImages: Record<string, ImageSourcePropType> = {
 	mokane: require('@/assets/images/trailheads/mokane.jpg'),
 	tebbetts: require('@/assets/images/trailheads/tebbetts.jpg'),
 	northJefferson: require('@/assets/images/trailheads/north-jefferson.jpg'),
+	hartsburg: require('@/assets/images/trailheads/hartsburg.jpg'),
+	providence: require('@/assets/images/trailheads/providence.jpg'),
+	mcBaine: require('@/assets/images/trailheads/mcbaine.jpg'),
+	huntsdale: require('@/assets/images/trailheads/huntsdale.jpg'),
 };
 
 export function getTrailheadImage(waypoint: Waypoint) {

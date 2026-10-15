@@ -517,7 +517,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.69433,
     lng: -92.30989,
     name: "Hartsburg",
-    image: "generic",
+    image: "hartsburg",
     services: {
       foodGrocery: null,
       restaurant: "community",
@@ -585,7 +585,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.83743,
     lng: -92.40574,
     name: "Providence",
-    image: "generic",
+    image: "providence",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -606,7 +606,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.88744,
     lng: -92.44641,
     name: "McBaine",
-    image: "generic",
+    image: "mcBaine",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -627,7 +627,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.91065,
     lng: -92.47374,
     name: "Huntsdale",
-    image: "generic",
+    image: "huntsdale",
     services: {
       foodGrocery: "community",
       restaurant: null,

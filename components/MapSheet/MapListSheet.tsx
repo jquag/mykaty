@@ -20,6 +20,7 @@ interface Props {
 	showZoomHint: boolean;
 	query: string;
 	onQueryChange: (query: string) => void;
+	onSubmitSearch: () => void;
 	enabledCategories: ReadonlySet<PoiCategory>;
 	onCategoriesChange: (categories: PoiCategory[]) => void;
 	onPlaceSelected: (place: Place) => void;
@@ -32,6 +33,7 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 	showZoomHint,
 	query,
 	onQueryChange,
+	onSubmitSearch,
 	enabledCategories,
 	onCategoriesChange,
 	onPlaceSelected,
@@ -81,6 +83,7 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 					<BottomSheetTextInput
 						value={query}
 						onChangeText={onQueryChange}
+						onSubmitEditing={onSubmitSearch}
 						placeholder="Search places & trailheads"
 						placeholderTextColor={colors.text(0.4)}
 						autoCorrect={false}

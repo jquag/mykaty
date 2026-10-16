@@ -24,6 +24,23 @@ const trailheadImages: Record<string, ImageSourcePropType> = {
 	mokane: require('@/assets/images/trailheads/mokane.jpg'),
 	tebbetts: require('@/assets/images/trailheads/tebbetts.jpg'),
 	northJefferson: require('@/assets/images/trailheads/north-jefferson.jpg'),
+	hartsburg: require('@/assets/images/trailheads/hartsburg.jpg'),
+	providence: require('@/assets/images/trailheads/providence.jpg'),
+	mcBaine: require('@/assets/images/trailheads/mcbaine.jpg'),
+	huntsdale: require('@/assets/images/trailheads/huntsdale.jpg'),
+	rocheport: require('@/assets/images/trailheads/rocheport.jpg'),
+	newFranklin: require('@/assets/images/trailheads/new-franklin.jpg'),
+	boonville: require('@/assets/images/trailheads/boonville.jpg'),
+	pilotGrove: require('@/assets/images/trailheads/pilot-grove.jpg'),
+	cliftonCity: require('@/assets/images/trailheads/clifton-city.jpg'),
+	sedalia: require('@/assets/images/trailheads/sedalia.jpg'),
+	greenRidge: require('@/assets/images/trailheads/green-ridge.jpg'),
+	windsor: require('@/assets/images/trailheads/windsor.jpg'),
+	calhoun: require('@/assets/images/trailheads/calhoun.jpg'),
+	clinton: require('@/assets/images/trailheads/clinton.jpg'),
+	claysville: require('@/assets/images/trailheads/claysville.jpg'),
+	wilton: require('@/assets/images/trailheads/wilton.jpg'),
+	easley: require('@/assets/images/trailheads/easley.jpg'),
 };
 
 export function getTrailheadImage(waypoint: Waypoint) {

@@ -496,7 +496,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.66058,
     lng: -92.25828,
     name: "Claysville",
-    image: "generic",
+    image: "claysville",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -538,7 +538,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.73544,
     lng: -92.35869,
     name: "Wilton",
-    image: "generic",
+    image: "wilton",
     services: {
       foodGrocery: "community",
       restaurant: null,
@@ -559,7 +559,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.80287,
     lng: -92.37716,
     name: "Easley",
-    image: "generic",
+    image: "easley",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -648,7 +648,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.97745,
     lng: -92.56093,
     name: "Rocheport",
-    image: "generic",
+    image: "rocheport",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -673,7 +673,7 @@ export const waypoints: Waypoint[] = [
     lat: 39.01246,
     lng: -92.73563,
     name: "New Franklin",
-    image: "generic",
+    image: "newFranklin",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -698,7 +698,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.97371,
     lng: -92.74902,
     name: "Boonville",
-    image: "generic",
+    image: "boonville",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -723,7 +723,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.87567,
     lng: -92.91246,
     name: "Pilot Grove",
-    image: "generic",
+    image: "pilotGrove",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -748,7 +748,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.76235,
     lng: -93.04100,
     name: "Clifton City",
-    image: "generic",
+    image: "cliftonCity",
     services: {
       foodGrocery: null,
       restaurant: null,
@@ -769,7 +769,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.70742,
     lng: -93.22109,
     name: "Sedalia",
-    image: "generic",
+    image: "sedalia",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -794,7 +794,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.61938,
     lng: -93.41001,
     name: "Green Ridge",
-    image: "generic",
+    image: "greenRidge",
     services: {
       foodGrocery: "community",
       restaurant: null,
@@ -819,7 +819,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.53556,
     lng: -93.52502,
     name: "Windsor",
-    image: "generic",
+    image: "windsor",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -844,7 +844,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.46875,
     lng: -93.62352,
     name: "Calhoun",
-    image: "generic",
+    image: "calhoun",
     services: {
       foodGrocery: "community",
       restaurant: "community",
@@ -869,7 +869,7 @@ export const waypoints: Waypoint[] = [
     lat: 38.38450,
     lng: -93.75785,
     name: "Clinton",
-    image: "generic",
+    image: "clinton",
     services: {
       foodGrocery: "community",
       restaurant: "community",

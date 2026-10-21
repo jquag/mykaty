@@ -1,3 +1,4 @@
+import { LIST_SHEET_SNAP } from "@/components/MapSheet/MapListSheet";
 import { Poi, PoiCategory } from "@/constants/pois";
 import { waypoints } from "@/constants/waypoints";
 import { usePois } from "@/contexts/PoisContext";
@@ -81,15 +82,18 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 		if (!searching) return visiblePois;
 		return searchResults.flatMap(place => (place.kind === 'poi' ? [place.poi] : []));
 	}, [searching, searchResults, visiblePois]);
-	const trailheadMarkers = useMemo(() => {
+	const shownTrailheads = useMemo(() => {
 		if (!searching) return showMarkers ? waypoints : [];
 		return searchResults.flatMap(place => (place.kind === 'trailhead' ? [place.waypoint] : []));
 	}, [searching, searchResults, showMarkers]);
 
-	// The selected POI stays on the map even when its category is off or the map has moved away
+	// The selected place stays on the map even when the search, its category, or the zoom would hide it
 	const poiMarkers = selectedPoi && !shownPois.some(poi => poi.id === selectedPoi.id)
 		? [...shownPois, selectedPoi]
 		: shownPois;
+	const trailheadMarkers = selectedWaypoint && !shownTrailheads.includes(selectedWaypoint)
+		? [...shownTrailheads, selectedWaypoint]
+		: shownTrailheads;
 
 	const listPlaces = useMemo(() => {
 		if (searching) return searchResults;
@@ -114,7 +118,7 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 	const select = useCallback((place: Place) => {
 		setSelected(place);
 		Keyboard.dismiss();
-		listSheetRef.current?.snapToIndex(0); // Minimize list sheet
+		listSheetRef.current?.snapToIndex(LIST_SHEET_SNAP.collapsed);
 
 		const placeDetailLevel = getMapDetailLevel(region?.longitudeDelta);
 		const pinShown = place.kind === 'poi' ? placeDetailLevel.showPois : placeDetailLevel.showMarkers;
@@ -147,7 +151,7 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 	// Shows the results in the list sheet partially open, with the map framing them all above it
 	const fitSearchResults = useCallback(() => {
 		if (searchResults.length === 0) return;
-		listSheetRef.current?.snapToIndex(1);
+		listSheetRef.current?.snapToIndex(LIST_SHEET_SNAP.partial);
 
 		const locations = searchResults.map(place => (place.kind === 'poi' ? place.poi : place.waypoint));
 		const lats = locations.map(location => location.lat);

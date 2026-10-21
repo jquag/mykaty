@@ -12,6 +12,8 @@ import TrailheadListItem from './TrailheadListItem';
 import PoiListItem from './PoiListItem';
 
 export const BOTTOM_SHEET_COLLAPSED_HEIGHT = 78;
+// Indexes into the sheet's snap points
+export const LIST_SHEET_SNAP = { collapsed: 0, partial: 1, full: 2 } as const;
 
 interface Props {
 	places: Place[];
@@ -48,8 +50,9 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 			: [...enabledCategories, category]);
 	};
 
+	// In the order of LIST_SHEET_SNAP
 	const snapPoints = useMemo(() => [BOTTOM_SHEET_COLLAPSED_HEIGHT, partialOpenHeight, '95%'], [partialOpenHeight]);
-	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(0);
+	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(LIST_SHEET_SNAP.collapsed);
 
 	const renderItem = useCallback(({ item }: { item: Place }) => (
 		item.kind === 'poi'

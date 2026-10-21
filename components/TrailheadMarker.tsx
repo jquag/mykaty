@@ -20,27 +20,21 @@ interface Props {
 export default function TrailheadMarker({ waypoint, showLabels = true, focused = false, expandHitArea = true, onPress }: Props) {
 	const colors = useColors();
 	const markerSize = focused ? 24 : 14;
-	// The dot sits at the exact center of the view so it lands on the coordinate;
-	// the label below it is balanced by equal empty space above.
-	let width = markerSize;
-	let height = markerSize;
-	if (expandHitArea) {
-		width = showLabels ? LABEL_WIDTH : HIT_SIZE;
-		height = showLabels
-			? Math.max(HIT_SIZE, markerSize + 2 * (LABEL_GAP + LABEL_HEIGHT))
-			: HIT_SIZE;
-	}
+	// The dot sits at the exact center of the view so it lands on the coordinate.
+	// The label hangs outside the view so only the area around the dot takes taps;
+	// a label-sized view would cover the dots of nearby trailheads.
+	const size = expandHitArea ? HIT_SIZE : markerSize;
 	return (
 		<Marker
 			// Remount when the view's size changes; iOS doesn't resize an already-mounted marker
-			key={`${waypoint.lat}-${waypoint.lng}-${focused}-${showLabels}-${expandHitArea}`}
+			key={`${waypoint.lat}-${waypoint.lng}-${focused}-${expandHitArea}`}
 			coordinate={{ latitude: waypoint.lat, longitude: waypoint.lng }}
 			anchor={{ x: 0.5, y: 0.5 }}
 			tracksViewChanges={true}
 			onPress={onPress}
 		>
 			{/* collapsable={false}: the marker sizes itself from its first native child, so this view must not be flattened */}
-			<View collapsable={false} style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+			<View collapsable={false} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
 				<View style={{
 					borderWidth: focused ? 3 : 1,
 					borderColor: focused ? colors.accent() : colors.border(),
@@ -52,8 +46,8 @@ export default function TrailheadMarker({ waypoint, showLabels = true, focused =
 				{showLabels && (
 					<View style={{
 						position: 'absolute',
-						top: height / 2 + markerSize / 2 + LABEL_GAP,
-						left: (width - LABEL_WIDTH) / 2,
+						top: size / 2 + markerSize / 2 + LABEL_GAP,
+						left: (size - LABEL_WIDTH) / 2,
 						width: LABEL_WIDTH,
 						height: LABEL_HEIGHT,
 						alignItems: 'center',

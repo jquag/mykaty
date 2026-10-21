@@ -12,6 +12,8 @@ import TrailheadListItem from './TrailheadListItem';
 import PoiListItem from './PoiListItem';
 
 export const BOTTOM_SHEET_COLLAPSED_HEIGHT = 78;
+// Indexes into the sheet's snap points
+export const LIST_SHEET_SNAP = { collapsed: 0, partial: 1, full: 2 } as const;
 
 interface Props {
 	places: Place[];
@@ -20,6 +22,7 @@ interface Props {
 	showZoomHint: boolean;
 	query: string;
 	onQueryChange: (query: string) => void;
+	onSubmitSearch: () => void;
 	enabledCategories: ReadonlySet<PoiCategory>;
 	onCategoriesChange: (categories: PoiCategory[]) => void;
 	onPlaceSelected: (place: Place) => void;
@@ -32,6 +35,7 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 	showZoomHint,
 	query,
 	onQueryChange,
+	onSubmitSearch,
 	enabledCategories,
 	onCategoriesChange,
 	onPlaceSelected,
@@ -46,8 +50,9 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 			: [...enabledCategories, category]);
 	};
 
+	// In the order of LIST_SHEET_SNAP
 	const snapPoints = useMemo(() => [BOTTOM_SHEET_COLLAPSED_HEIGHT, partialOpenHeight, '95%'], [partialOpenHeight]);
-	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(0);
+	const [currentSnapPoint, setCurrentSnapPoint] = useState<number>(LIST_SHEET_SNAP.collapsed);
 
 	const renderItem = useCallback(({ item }: { item: Place }) => (
 		item.kind === 'poi'
@@ -81,6 +86,7 @@ const MapListSheet = forwardRef<BottomSheet, Props>(({
 					<BottomSheetTextInput
 						value={query}
 						onChangeText={onQueryChange}
+						onSubmitEditing={onSubmitSearch}
 						placeholder="Search places & trailheads"
 						placeholderTextColor={colors.text(0.4)}
 						autoCorrect={false}

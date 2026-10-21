@@ -32,7 +32,7 @@ export default function MapScreen() {
 	const {
 		mapRef, listSheetRef, setRegion, mapHeight, setMapHeight, detailLevel,
 		selected, selectedPoi, selectedWaypoint, selectedRoute, select, clearSelection,
-		query, setQuery, poiMarkers, listPlaces, emptyMessage, showZoomHint,
+		query, setQuery, fitSearchResults, poiMarkers, trailheadMarkers, listPlaces, emptyMessage, showZoomHint,
 	} = usePlaceMap(enabledCategories);
 	const [mapReady, setMapReady] = useState(false);
 
@@ -70,6 +70,7 @@ export default function MapScreen() {
 	const enterMeasureMode = () => {
 		Keyboard.dismiss();
 		clearSelection();
+		setQuery('');
 		setMeasureMode(true);
 	};
 
@@ -78,7 +79,7 @@ export default function MapScreen() {
 		setMeasureMode(false);
 	};
 
-	const { showLabels, showMarkers } = detailLevel;
+	const { showLabels } = detailLevel;
 
 	// Other tabs focus a trailhead by navigating here with its name; the camera only moves once the map is ready
 	useFocusEffect(useCallback(() => {
@@ -130,8 +131,8 @@ export default function MapScreen() {
 					<PoiMarker key={poi.id} poi={poi} focused={selectedPoi?.id === poi.id} onPress={() => select({ kind: 'poi', poi })} />
 				))}
 
-				{showMarkers && (!measureMode || showLabels) ? waypoints.map((waypoint, index) => (
-					<TrailheadMarker key={index} waypoint={waypoint} showLabels={showLabels || selectedWaypoint === waypoint} focused={selectedWaypoint === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => select({ kind: 'trailhead', waypoint })} />
+				{!measureMode || showLabels ? trailheadMarkers.map(waypoint => (
+					<TrailheadMarker key={`${waypoint.lat}-${waypoint.lng}`} waypoint={waypoint} showLabels={showLabels || selectedWaypoint === waypoint} focused={selectedWaypoint === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => select({ kind: 'trailhead', waypoint })} />
 				)) : null}
 			</MapView>
 			{/* Trail button */}
@@ -218,6 +219,7 @@ export default function MapScreen() {
 					showZoomHint={showZoomHint}
 					query={query}
 					onQueryChange={setQuery}
+					onSubmitSearch={fitSearchResults}
 					enabledCategories={enabledCategories}
 					onCategoriesChange={setCategoriesEnabled}
 					partialOpenHeight={PLACE_SHEET_PARTIAL_HEIGHT}

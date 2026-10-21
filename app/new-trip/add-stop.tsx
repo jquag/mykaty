@@ -8,7 +8,6 @@ import TrailheadMarker from "@/components/TrailheadMarker";
 import TripPointMarker from "@/components/TripPointMarker";
 import type { Poi, PoiCategory } from "@/constants/pois";
 import { trailPoints } from "@/constants/trailPoints";
-import { waypoints } from "@/constants/waypoints";
 import { usePois } from "@/contexts/PoisContext";
 import useColors from "@/hooks/use-colors";
 import usePlaceMap, { PLACE_SHEET_PARTIAL_HEIGHT } from "@/hooks/use-place-map";
@@ -78,9 +77,9 @@ function StopPicker({ id, start, end, leg, stopsJson }: PickerProps) {
 	const {
 		mapRef, listSheetRef, setRegion, setMapHeight, detailLevel,
 		selected, selectedPoi, selectedWaypoint, selectedRoute, select, clearSelection,
-		query, setQuery, poiMarkers, listPlaces, emptyMessage, showZoomHint,
+		query, setQuery, fitSearchResults, poiMarkers, trailheadMarkers, listPlaces, emptyMessage, showZoomHint,
 	} = usePlaceMap(categories);
-	const { showLabels, showMarkers } = detailLevel;
+	const { showLabels } = detailLevel;
 
 	const [from, to] = leg === 'out' ? [start, end] : [end, start];
 	const stops = useMemo(() => parseStops(stopsJson), [stopsJson]);
@@ -166,15 +165,15 @@ function StopPicker({ id, start, end, leg, stopsJson }: PickerProps) {
 					<PoiMarker key={poi.id} poi={poi} focused={selectedPoi?.id === poi.id} onPress={() => select({ kind: 'poi', poi })} />
 				))}
 
-				{showMarkers ? waypoints.map((waypoint, index) => (
+				{trailheadMarkers.map(waypoint => (
 					<TrailheadMarker
-						key={index}
+						key={`${waypoint.lat}-${waypoint.lng}`}
 						waypoint={waypoint}
 						showLabels={showLabels || selectedWaypoint === waypoint}
 						focused={selectedWaypoint === waypoint}
 						onPress={() => select({ kind: 'trailhead', waypoint })}
 					/>
-				)) : null}
+				))}
 
 				<TripPointMarker coordinate={trailCoordinates[start]} label="A" color={colors.primary()} textColor={colors.border()} />
 				<TripPointMarker coordinate={trailCoordinates[end]} label="B" color={colors.primary()} textColor={colors.border()} />
@@ -197,6 +196,7 @@ function StopPicker({ id, start, end, leg, stopsJson }: PickerProps) {
 				showZoomHint={showZoomHint}
 				query={query}
 				onQueryChange={setQuery}
+				onSubmitSearch={fitSearchResults}
 				enabledCategories={categories}
 				onCategoriesChange={(enabled) => setCategories(new Set(enabled))}
 				partialOpenHeight={PLACE_SHEET_PARTIAL_HEIGHT}

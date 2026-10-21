@@ -1,3 +1,4 @@
+import { LIST_SHEET_SNAP } from "@/components/MapSheet/MapListSheet";
 import { Poi, PoiCategory } from "@/constants/pois";
 import { waypoints } from "@/constants/waypoints";
 import { usePois } from "@/contexts/PoisContext";
@@ -15,7 +16,19 @@ export const PLACE_SHEET_PARTIAL_HEIGHT = `${BOTTOM_SHEET_PARTIAL_OPEN_PERCENT *
 const MAX_VISIBLE_POIS = 100;
 // Zoom used when selecting a place whose pin isn't shown at the current zoom, such as a search result
 const SELECTED_PLACE_DELTA = 0.04;
-const ROUTE_FIT_MARGIN = 50;
+// Keeps results clustered in one town from zooming in to street level
+const MIN_SEARCH_FIT_DELTA = 0.04;
+const FIT_MARGIN = 50;
+
+// Keeps fitted coordinates above the partially open sheet
+function getSheetFitPadding(mapHeight: number) {
+	return {
+		top: FIT_MARGIN,
+		right: FIT_MARGIN,
+		bottom: mapHeight * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT + FIT_MARGIN,
+		left: FIT_MARGIN,
+	};
+}
 
 /**
  * State for a map of trailheads and places with a list sheet and a detail sheet for the selected place
@@ -61,20 +74,35 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 		[selectedPoi, routes]
 	);
 
-	// The selected POI stays on the map even when its category is off or the map has moved away
-	const poiMarkers = selectedPoi && !visiblePois.some(poi => poi.id === selectedPoi.id)
-		? [...visiblePois, selectedPoi]
-		: visiblePois;
-
 	const searching = isSearchQuery(query);
+	const searchResults = useMemo(() => (searching ? searchPlaces(query, pois) : []), [searching, query, pois]);
+
+	// While searching, the map shows only the results, whatever the zoom
+	const shownPois = useMemo(() => {
+		if (!searching) return visiblePois;
+		return searchResults.flatMap(place => (place.kind === 'poi' ? [place.poi] : []));
+	}, [searching, searchResults, visiblePois]);
+	const shownTrailheads = useMemo(() => {
+		if (!searching) return showMarkers ? waypoints : [];
+		return searchResults.flatMap(place => (place.kind === 'trailhead' ? [place.waypoint] : []));
+	}, [searching, searchResults, showMarkers]);
+
+	// The selected place stays on the map even when the search, its category, or the zoom would hide it
+	const poiMarkers = selectedPoi && !shownPois.some(poi => poi.id === selectedPoi.id)
+		? [...shownPois, selectedPoi]
+		: shownPois;
+	const trailheadMarkers = selectedWaypoint && !shownTrailheads.includes(selectedWaypoint)
+		? [...shownTrailheads, selectedWaypoint]
+		: shownTrailheads;
+
 	const listPlaces = useMemo(() => {
-		if (searching) return searchPlaces(query, pois);
+		if (searching) return searchResults;
 		const places: Place[] = [
 			...visibleWaypoints.map(waypoint => ({ kind: 'trailhead' as const, waypoint })),
 			...visiblePois.map(poi => ({ kind: 'poi' as const, poi })),
 		];
 		return places.sort(compareByTrailMile);
-	}, [searching, query, pois, visibleWaypoints, visiblePois]);
+	}, [searching, searchResults, visibleWaypoints, visiblePois]);
 
 	let emptyMessage = 'Zoom in to see trailheads';
 	if (searching) {
@@ -90,7 +118,7 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 	const select = useCallback((place: Place) => {
 		setSelected(place);
 		Keyboard.dismiss();
-		listSheetRef.current?.snapToIndex(0); // Minimize list sheet
+		listSheetRef.current?.snapToIndex(LIST_SHEET_SNAP.collapsed);
 
 		const placeDetailLevel = getMapDetailLevel(region?.longitudeDelta);
 		const pinShown = place.kind === 'poi' ? placeDetailLevel.showPois : placeDetailLevel.showMarkers;
@@ -104,12 +132,7 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 		const route = place.kind === 'poi' ? getPoiRouteCoordinates(place.poi, routes) : null;
 		const areaAboveSheet = { latitude: lat, longitude: lng, latitudeDelta: latitudeDelta * (1 - BOTTOM_SHEET_PARTIAL_OPEN_PERCENT), longitudeDelta };
 		if (route && !route.every(point => isInRegion({ lat: point.latitude, lng: point.longitude }, areaAboveSheet))) {
-			fitMapToCoordinates(mapRef.current, route, {
-				top: ROUTE_FIT_MARGIN,
-				right: ROUTE_FIT_MARGIN,
-				bottom: mapHeight * BOTTOM_SHEET_PARTIAL_OPEN_PERCENT + ROUTE_FIT_MARGIN,
-				left: ROUTE_FIT_MARGIN,
-			});
+			fitMapToCoordinates(mapRef.current, route, getSheetFitPadding(mapHeight));
 			return;
 		}
 
@@ -124,6 +147,29 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 	const clearSelection = useCallback(() => {
 		setSelected(null);
 	}, []);
+
+	// Shows the results in the list sheet partially open, with the map framing them all above it
+	const fitSearchResults = useCallback(() => {
+		if (searchResults.length === 0) return;
+		listSheetRef.current?.snapToIndex(LIST_SHEET_SNAP.partial);
+
+		const locations = searchResults.map(place => (place.kind === 'poi' ? place.poi : place.waypoint));
+		const lats = locations.map(location => location.lat);
+		const lngs = locations.map(location => location.lng);
+		const minLat = Math.min(...lats);
+		const maxLat = Math.max(...lats);
+		const minLng = Math.min(...lngs);
+		const maxLng = Math.max(...lngs);
+		const latitude = (minLat + maxLat) / 2;
+		const longitude = (minLng + maxLng) / 2;
+		const halfLatSpan = Math.max(maxLat - minLat, MIN_SEARCH_FIT_DELTA) / 2;
+		const halfLngSpan = Math.max(maxLng - minLng, MIN_SEARCH_FIT_DELTA) / 2;
+
+		fitMapToCoordinates(mapRef.current, [
+			{ latitude: latitude - halfLatSpan, longitude: longitude - halfLngSpan },
+			{ latitude: latitude + halfLatSpan, longitude: longitude + halfLngSpan },
+		], getSheetFitPadding(mapHeight));
+	}, [searchResults, mapHeight]);
 
 	return {
 		mapRef,
@@ -142,7 +188,9 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 		query,
 		setQuery,
 		searching,
+		fitSearchResults,
 		poiMarkers,
+		trailheadMarkers,
 		listPlaces,
 		emptyMessage,
 		showZoomHint,

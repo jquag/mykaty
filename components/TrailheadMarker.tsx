@@ -29,7 +29,7 @@ export default function TrailheadMarker({ waypoint, showLabels = true, focused =
 		>
 			<View style={{
 				borderWidth: focused ? 3 : 1,
-				borderColor: focused ? colors.accent() : colors.border(),
+				borderColor: focused ? colors.accent() : colors.onPrimary(),
 				backgroundColor: colors.primary(),
 				width: markerSize,
 				height: markerSize,

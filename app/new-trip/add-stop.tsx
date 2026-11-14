@@ -178,8 +178,8 @@ function StopPicker({ id, start, end, leg, stopsJson }: PickerProps) {
 					/>
 				))}
 
-				<TripPointMarker coordinate={trailCoordinates[start]} label="A" color={colors.primary()} textColor={colors.border()} />
-				<TripPointMarker coordinate={trailCoordinates[end]} label="B" color={colors.primary()} textColor={colors.border()} />
+				<TripPointMarker coordinate={trailCoordinates[start]} label="A" color={colors.primary()} textColor={colors.onPrimary()} />
+				<TripPointMarker coordinate={trailCoordinates[end]} label="B" color={colors.primary()} textColor={colors.onPrimary()} />
 				{stopEntries.map(({ stop, number }) => stop && (
 					<TripPointMarker
 						key={`${stop.leg}-${stop.poiId}`}

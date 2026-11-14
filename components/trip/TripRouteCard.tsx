@@ -128,7 +128,7 @@ function LegList({ entries, endLabels, onRemoveStop }: LegListProps) {
 							) : (
 								<>
 									<View style={[styles.badge, { backgroundColor: colors.primary() }]}>
-										<AppText style={[styles.badgeLabel, { color: colors.border() }]}>
+										<AppText style={[styles.badgeLabel, { color: colors.onPrimary() }]}>
 											{endLabels[index === 0 ? 0 : 1]}
 										</AppText>
 									</View>

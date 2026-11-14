@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Pressable } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,9 +14,14 @@ interface Props {
 export default function TrailheadListItem({ waypoint, onPress }: Props) {
 	const colors = useColors();
 
-	const hasParking = waypoint.services?.parking !== null;
-	const hasWater = waypoint.services?.water !== null;
-	const hasRestroom = waypoint.services?.restroom !== null;
+	const services = waypoint.services;
+	const hasParking = services?.parking != null;
+	const hasWater = services?.water != null;
+	const hasRestroom = services?.restroom != null;
+	const hasFood = services?.restaurant != null || services?.foodGrocery != null;
+	const hasBikeRepair = services?.bikeShop != null || services?.bikeService != null || services?.bikeWorkStation != null;
+
+	const iconColor = (available: boolean) => available ? colors.secondary() : colors.text(0.25);
 
 	return (
 		<Pressable
@@ -35,31 +41,22 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 			</View>
 			<View style={styles.content}>
 				<AppText style={styles.name}>{waypoint.name}</AppText>
-				<View style={[styles.services, { borderColor: colors.border() }]}>
-					<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>
-						<AppText style={{
-							fontSize: 16,
-							fontWeight: '700',
-							color: hasParking ? colors.secondary() : colors.text(0.2)
-						}}
-						>
-							P
-						</AppText>
-					</View>
-					<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>
-						<Ionicons
-							name="water"
-							size={18}
-							color={hasWater ? colors.secondary() : colors.text(0.2)}
-						/>
-					</View>
-					<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>
-						<MaterialCommunityIcons
-							name="human-male-female"
-							size={18}
-							color={hasRestroom ? colors.secondary() : colors.text(0.2)}
-						/>
-					</View>
+				<View style={styles.services}>
+					<ServiceChip label="Parking" available={hasParking}>
+						<AppText style={[styles.parkingIcon, { color: iconColor(hasParking) }]}>P</AppText>
+					</ServiceChip>
+					<ServiceChip label="Water" available={hasWater}>
+						<Ionicons name="water" size={18} color={iconColor(hasWater)} />
+					</ServiceChip>
+					<ServiceChip label="Restroom" available={hasRestroom}>
+						<MaterialCommunityIcons name="human-male-female" size={18} color={iconColor(hasRestroom)} />
+					</ServiceChip>
+					<ServiceChip label="Food" available={hasFood}>
+						<MaterialCommunityIcons name="silverware-fork-knife" size={16} color={iconColor(hasFood)} />
+					</ServiceChip>
+					<ServiceChip label="Bike repair" available={hasBikeRepair}>
+						<MaterialCommunityIcons name="wrench" size={16} color={iconColor(hasBikeRepair)} />
+					</ServiceChip>
 				</View>
 			</View>
 			<Ionicons
@@ -68,6 +65,27 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 				color={colors.text(0.4)}
 			/>
 		</Pressable>
+	);
+}
+
+function ServiceChip({ label, available, children }: { label: string; available: boolean; children: ReactNode }) {
+	const colors = useColors();
+
+	return (
+		<View
+			accessible
+			accessibilityLabel={available ? label : `No ${label.toLowerCase()}`}
+			style={[
+				styles.serviceIcon,
+				{
+					borderColor: colors.border(),
+					backgroundColor: available ? colors.secondary(0.15) : 'transparent',
+				},
+			]}
+		>
+			{children}
+			{!available && <View style={[styles.strike, { backgroundColor: colors.text(0.2) }]} />}
+		</View>
 	);
 }
 
@@ -101,10 +119,24 @@ const styles = StyleSheet.create({
 		alignSelf: 'flex-start',
 	},
 	serviceIcon: {
-		paddingHorizontal: 8,
-		paddingVertical: 4,
+		width: 36,
+		height: 28,
+		alignItems: 'center',
+		justifyContent: 'center',
 		borderRadius: 6,
 		borderWidth: 1,
+		overflow: 'hidden',
+	},
+	parkingIcon: {
+		fontSize: 16,
+		fontWeight: '700',
+	},
+	strike: {
+		position: 'absolute',
+		left: -8,
+		right: -8,
+		height: 1,
+		transform: [{ rotate: '-38deg' }],
 	},
 	notes: {
 		fontSize: 12,

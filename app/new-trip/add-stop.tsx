@@ -12,6 +12,7 @@ import { usePois } from "@/contexts/PoisContext";
 import useColors from "@/hooks/use-colors";
 import usePlaceMap, { PLACE_SHEET_PARTIAL_HEIGHT } from "@/hooks/use-place-map";
 import type { StopLeg } from "@/types/Trip";
+import { HIDE_BUILT_IN_POIS_STYLE } from "@/utils/map";
 import { getCategoryConfig } from "@/utils/pois";
 import {
 	buildTripItinerary,
@@ -134,6 +135,8 @@ function StopPicker({ id, start, end, leg, stopsJson }: PickerProps) {
 			<MapView
 				ref={mapRef}
 				provider={PROVIDER_DEFAULT}
+				showsPointsOfInterests={false}
+				customMapStyle={HIDE_BUILT_IN_POIS_STYLE}
 				initialRegion={initialRegion}
 				onRegionChangeComplete={setRegion}
 				onLayout={(e) => setMapHeight(e.nativeEvent.layout.height)}

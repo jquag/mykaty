@@ -12,7 +12,7 @@ import { usePois } from "@/contexts/PoisContext";
 import useColors from "@/hooks/use-colors";
 import usePlaceMap, { PLACE_SHEET_PARTIAL_HEIGHT } from "@/hooks/use-place-map";
 import useTrailSegment from "@/hooks/use-trail-segment";
-import { fitMapToCoordinates } from "@/utils/map";
+import { fitMapToCoordinates, HIDE_BUILT_IN_POIS_STYLE } from "@/utils/map";
 import { getCategoryConfig } from "@/utils/pois";
 import { getSegmentCoordinates, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -98,6 +98,8 @@ export default function MapScreen() {
 			<MapView
 				ref={mapRef}
 				provider={PROVIDER_DEFAULT}
+				showsPointsOfInterests={false}
+				customMapStyle={HIDE_BUILT_IN_POIS_STYLE}
 				initialRegion={TRAIL_REGION}
 				onMapReady={() => setMapReady(true)}
 				onRegionChangeComplete={setRegion}

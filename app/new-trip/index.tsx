@@ -7,7 +7,7 @@ import { waypoints } from "@/constants/waypoints";
 import useColors from "@/hooks/use-colors";
 import useTrailSegment from "@/hooks/use-trail-segment";
 import { headerButtons } from "@/utils/header";
-import { fitMapToCoordinates } from "@/utils/map";
+import { fitMapToCoordinates, HIDE_BUILT_IN_POIS_STYLE } from "@/utils/map";
 import { getMapDetailLevel, getSegmentCoordinates, getTrailRegion, isTrailIndex, TRAIL_REGION, trailCoordinates } from "@/utils/trail";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
@@ -93,6 +93,8 @@ export default function ChooseRoute() {
 			<MapView
 				ref={mapRef}
 				provider={PROVIDER_DEFAULT}
+				showsPointsOfInterests={false}
+				customMapStyle={HIDE_BUILT_IN_POIS_STYLE}
 				initialRegion={initialRoute ? getTrailRegion(initialRoute.start, initialRoute.end) : TRAIL_REGION}
 				onMapReady={() => {
 					pendingFit.current.mapReady = true;

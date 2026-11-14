@@ -1,7 +1,10 @@
 import { Coordinate } from '@/types/Trip';
 import { Linking, PixelRatio, Platform } from 'react-native';
 import type MapView from 'react-native-maps';
-import type { EdgePadding, LatLng, Region } from 'react-native-maps';
+import type { EdgePadding, LatLng, MapStyleElement, Region } from 'react-native-maps';
+
+// Google Maps on Android ignores showsPointsOfInterests, so its POIs are hidden with a style instead
+export const HIDE_BUILT_IN_POIS_STYLE: MapStyleElement[] = [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }];
 
 /**
  * Calculate distance in miles between two coordinates using the Haversine formula

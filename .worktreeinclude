@@ -1,0 +1,3 @@
+scripts/pois/.env
+scripts/facts/.env
+.env*.local

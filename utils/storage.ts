@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PoiCategory, PoiFile, PoiRouteFile } from '@/constants/pois';
+import { FunFactFile } from '@/types/FunFact';
 import { Trip } from '@/types/Trip';
 
 const TRIP_PREFIX = 'trip_';
@@ -9,6 +10,9 @@ const POI_ROUTES_FILE_KEY = 'poi_routes_file';
 const POI_ROUTES_SHA_KEY = 'poi_routes_sha';
 const POIS_CHECKED_AT_KEY = 'pois_checked_at';
 const POI_CATEGORIES_KEY = 'poi_categories';
+const FUN_FACTS_FILE_KEY = 'fun_facts_file';
+const FUN_FACTS_SHA_KEY = 'fun_facts_sha';
+const FUN_FACTS_CHECKED_AT_KEY = 'fun_facts_checked_at';
 
 export function generateTripId(): string {
   return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9);
@@ -75,4 +79,23 @@ export async function getPoiCategories(): Promise<PoiCategory[]> {
 
 export async function savePoiCategories(categories: PoiCategory[]): Promise<void> {
   await AsyncStorage.setItem(POI_CATEGORIES_KEY, JSON.stringify(categories));
+}
+
+export async function getCachedFunFacts(): Promise<{ file: FunFactFile; sha: string } | null> {
+  const [[, fileJson], [, sha]] = await AsyncStorage.multiGet([FUN_FACTS_FILE_KEY, FUN_FACTS_SHA_KEY]);
+  if (!fileJson || !sha) return null;
+  return { file: JSON.parse(fileJson), sha };
+}
+
+export async function saveCachedFunFacts(fileJson: string, sha: string): Promise<void> {
+  await AsyncStorage.multiSet([[FUN_FACTS_FILE_KEY, fileJson], [FUN_FACTS_SHA_KEY, sha]]);
+}
+
+export async function getFunFactsCheckedAt(): Promise<number | null> {
+  const checkedAt = await AsyncStorage.getItem(FUN_FACTS_CHECKED_AT_KEY);
+  return checkedAt ? Number(checkedAt) : null;
+}
+
+export async function saveFunFactsCheckedAt(time: number): Promise<void> {
+  await AsyncStorage.setItem(FUN_FACTS_CHECKED_AT_KEY, String(time));
 }

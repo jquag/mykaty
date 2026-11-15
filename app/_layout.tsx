@@ -1,3 +1,4 @@
+import { FunFactsProvider } from "@/contexts/FunFactsContext";
 import { PoisProvider } from "@/contexts/PoisContext";
 import { TripsProvider } from "@/contexts/TripsContext";
 import { Stack } from "expo-router";
@@ -12,10 +13,12 @@ export default function RootLayout() {
 		<GestureHandlerRootView style={{ flex: 1 }}>
 			<TripsProvider>
 				<PoisProvider>
-					<Stack>
-						<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-						<Stack.Screen name="new-trip" options={{ presentation: 'fullScreenModal', headerShown: false }} />
-					</Stack>
+					<FunFactsProvider>
+						<Stack>
+							<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+							<Stack.Screen name="new-trip" options={{ presentation: 'fullScreenModal', headerShown: false }} />
+						</Stack>
+					</FunFactsProvider>
 				</PoisProvider>
 			</TripsProvider>
 		</GestureHandlerRootView>

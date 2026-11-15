@@ -1,4 +1,4 @@
-import FeaturedTrailheadCard from "@/components/home/FeaturedTrailheadCard";
+import FunFactCard from "@/components/home/FunFactCard";
 import NextTripCard from "@/components/home/NextTripCard";
 import NoticeCard from "@/components/home/NoticeCard";
 import ProgressCard from "@/components/home/ProgressCard";
@@ -42,7 +42,7 @@ export default function Home() {
 			) : (
 				<ProgressCard completed={completed} upcoming={upcoming} />
 			)}
-			<FeaturedTrailheadCard now={now} />
+			<FunFactCard now={now} />
 			{completed.length > 0 && (
 				<View>
 					<View style={styles.sectionHeader}>

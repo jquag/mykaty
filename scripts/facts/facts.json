@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "facts": [
+    {
+      "id": "machens-eastern-end",
+      "text": "The trail's eastern end. There's no road access, so most people start a few miles west at Black Walnut.",
+      "location": { "trailhead": "Machens" }
+    },
+    {
+      "id": "black-walnut-parking",
+      "text": "The easternmost trailhead with parking, about three miles from the trail's end at Machens.",
+      "location": { "trailhead": "Black Walnut" }
+    },
+    {
+      "id": "st-charles-first-capital",
+      "text": "Missouri's first state capital, and the last stop for Lewis and Clark's expedition before it headed up the Missouri in May 1804.",
+      "location": { "trailhead": "St. Charles" }
+    },
+    {
+      "id": "weldon-spring-disposal-cell",
+      "text": "Near a former uranium processing site. You can climb its capped disposal cell for a view over the river valley.",
+      "location": { "trailhead": "Weldon Spring" }
+    },
+    {
+      "id": "defiance-boone-home",
+      "text": "Daniel Boone spent his last years nearby. His family's stone house is north of the trail, off Highway F.",
+      "location": { "trailhead": "Defiance" }
+    },
+    {
+      "id": "matson-klondike-park",
+      "title": "Klondike Park",
+      "text": "A former silica sand quarry, now a county park with bluff-top views of the Missouri River.",
+      "location": { "lat": 38.5777, "lng": -90.8422 }
+    },
+    {
+      "id": "augusta-wine-region",
+      "text": "In 1980 Augusta became the first federally recognized wine region in the United States.",
+      "location": { "trailhead": "Augusta" }
+    },
+    {
+      "id": "dutzow-oldest-german-town",
+      "text": "Settled by German immigrants in 1832, it's considered the oldest German town in Missouri.",
+      "location": { "trailhead": "Dutzow" }
+    },
+    {
+      "id": "marthasville-boone-grave",
+      "text": "Daniel and Rebecca Boone were first buried near here, before their remains were moved to Kentucky.",
+      "location": { "trailhead": "Marthasville" }
+    },
+    {
+      "id": "mckittrick-hermann",
+      "text": "Hermann sits just across the river, an easy detour over the Route 19 bridge.",
+      "location": { "trailhead": "McKittrick" }
+    },
+    {
+      "id": "tebbetts-trail-shelter",
+      "text": "Home to a trail shelter that offers simple bunkhouse lodging for trail users.",
+      "location": { "trailhead": "Tebbetts" }
+    },
+    {
+      "id": "north-jefferson-bridge",
+      "text": "A bike and pedestrian lane on the Missouri River bridge links the trail here with Jefferson City and the Capitol.",
+      "location": { "trailhead": "North Jefferson" }
+    }
+  ]
+}

@@ -20,18 +20,18 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Keyboard, View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
-import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { MapPressEvent, Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 
 const MEASURE_FIT_MARGIN = 40;
 
 export default function MapScreen() {
 	const router = useRouter();
-	const { trailhead } = useLocalSearchParams<{ trailhead?: string }>();
+	const { trailhead, lat, lng, label } = useLocalSearchParams<{ trailhead?: string; lat?: string; lng?: string; label?: string }>();
 	const colors = useColors();
 	const { attribution, enabledCategories, setCategoriesEnabled } = usePois();
 	const {
 		mapRef, listSheetRef, setRegion, mapHeight, setMapHeight, detailLevel,
-		selected, selectedPoi, selectedWaypoint, selectedRoute, select, clearSelection,
+		selected, selectedPoi, selectedWaypoint, selectedRoute, select, clearSelection, spot, focusSpot, clearSpot,
 		query, setQuery, fitSearchResults, poiMarkers, trailheadMarkers, listPlaces, emptyMessage, showZoomHint,
 	} = usePlaceMap(enabledCategories);
 	const [mapReady, setMapReady] = useState(false);
@@ -70,6 +70,7 @@ export default function MapScreen() {
 	const enterMeasureMode = () => {
 		Keyboard.dismiss();
 		clearSelection();
+		clearSpot();
 		setQuery('');
 		setMeasureMode(true);
 	};
@@ -81,17 +82,27 @@ export default function MapScreen() {
 
 	const { showLabels } = detailLevel;
 
-	// Other tabs focus a trailhead by navigating here with its name; the camera only moves once the map is ready
+	// Other tabs focus a trailhead by navigating here with its name, or a spot with lat, lng and an optional label.
+	// The camera only moves once the map is ready.
 	useFocusEffect(useCallback(() => {
-		if (!trailhead || !mapReady) return;
-		router.setParams({ trailhead: undefined });
-		const waypoint = waypoints.find(wp => wp.name === trailhead);
-		if (!waypoint) return;
+		if ((!trailhead && !lat && !lng) || !mapReady) return;
+		router.setParams({ trailhead: undefined, lat: undefined, lng: undefined, label: undefined });
+		const waypoint = trailhead ? waypoints.find(wp => wp.name === trailhead) : undefined;
+		const spotLat = Number(lat);
+		const spotLng = Number(lng);
+		const hasSpot = !trailhead && Number.isFinite(spotLat) && Number.isFinite(spotLng);
+		if (!waypoint && !hasSpot) return;
 		segment.clear();
 		setMeasureMode(false);
 		setQuery('');
-		select({ kind: 'trailhead', waypoint });
-	}, [trailhead, mapReady, router, segment, setQuery, select]));
+		if (waypoint) {
+			select({ kind: 'trailhead', waypoint });
+		} else {
+			focusSpot({ lat: spotLat, lng: spotLng, label: label || undefined });
+		}
+	}, [trailhead, lat, lng, label, mapReady, router, segment, setQuery, select, focusSpot]));
+
+	useFocusEffect(useCallback(() => clearSpot, [clearSpot]));
 
   return (
     <View style={{flex: 1}}>
@@ -132,6 +143,15 @@ export default function MapScreen() {
 				{!measureMode && poiMarkers.map(poi => (
 					<PoiMarker key={poi.id} poi={poi} focused={selectedPoi?.id === poi.id} onPress={() => select({ kind: 'poi', poi })} />
 				))}
+
+				{!measureMode && spot && (
+					<Marker
+						coordinate={{ latitude: spot.lat, longitude: spot.lng }}
+						title={spot.label}
+						pinColor={colors.primary()}
+						zIndex={2}
+					/>
+				)}
 
 				{!measureMode || showLabels ? trailheadMarkers.map(waypoint => (
 					<TrailheadMarker key={`${waypoint.lat}-${waypoint.lng}`} waypoint={waypoint} showLabels={showLabels || selectedWaypoint === waypoint} focused={selectedWaypoint === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => select({ kind: 'trailhead', waypoint })} />

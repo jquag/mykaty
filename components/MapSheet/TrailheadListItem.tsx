@@ -1,31 +1,54 @@
-import { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Pressable } from 'react-native-gesture-handler';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Waypoint } from '@/constants/waypoints';
+import { ServiceKey, hasService } from '@/constants/services';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
+import ServiceIcon from './ServiceIcon';
 
 interface Props {
 	waypoint: Waypoint;
 	onPress: () => void;
 }
 
+interface ChipConfig {
+	label: string;
+	icon: ServiceKey;
+	/** The chip is lit when any of these services is present */
+	services: ServiceKey[];
+}
+
+const CHIPS: ChipConfig[] = [
+	{ label: 'Parking', icon: 'parking', services: ['parking'] },
+	{ label: 'Water', icon: 'water', services: ['water'] },
+	{ label: 'Restroom', icon: 'restroom', services: ['restroom'] },
+	{ label: 'Food', icon: 'restaurant', services: ['restaurant', 'foodGrocery'] },
+	{ label: 'Bike repair', icon: 'bikeService', services: ['bikeShop', 'bikeService'] },
+];
+
+const CHIP_WIDTH = 36;
+const CHIP_HEIGHT = 28;
+const STRIKE_ANGLE = `${-Math.atan2(CHIP_HEIGHT, CHIP_WIDTH) * 180 / Math.PI}deg`;
+
 export default function TrailheadListItem({ waypoint, onPress }: Props) {
 	const colors = useColors();
 
-	const services = waypoint.services;
-	const hasParking = services?.parking != null;
-	const hasWater = services?.water != null;
-	const hasRestroom = services?.restroom != null;
-	const hasFood = services?.restaurant != null || services?.foodGrocery != null;
-	const hasBikeRepair = services?.bikeShop != null || services?.bikeService != null || services?.bikeWorkStation != null;
+	const chips = CHIPS.map(chip => ({
+		...chip,
+		available: chip.services.some(key => hasService(waypoint.services, key)),
+	}));
 
-	const iconColor = (available: boolean) => available ? colors.secondary() : colors.text(0.25);
+	const accessibilityLabel = [
+		waypoint.name,
+		...chips.map(({ label, available }) => available ? label : `no ${label.toLowerCase()}`),
+	].join(', ');
 
 	return (
 		<Pressable
 			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={accessibilityLabel}
 			style={({ pressed }) => [
 				styles.container,
 				{
@@ -42,21 +65,9 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 			<View style={styles.content}>
 				<AppText style={styles.name}>{waypoint.name}</AppText>
 				<View style={styles.services}>
-					<ServiceChip label="Parking" available={hasParking}>
-						<AppText style={[styles.parkingIcon, { color: iconColor(hasParking) }]}>P</AppText>
-					</ServiceChip>
-					<ServiceChip label="Water" available={hasWater}>
-						<Ionicons name="water" size={18} color={iconColor(hasWater)} />
-					</ServiceChip>
-					<ServiceChip label="Restroom" available={hasRestroom}>
-						<MaterialCommunityIcons name="human-male-female" size={18} color={iconColor(hasRestroom)} />
-					</ServiceChip>
-					<ServiceChip label="Food" available={hasFood}>
-						<MaterialCommunityIcons name="silverware-fork-knife" size={16} color={iconColor(hasFood)} />
-					</ServiceChip>
-					<ServiceChip label="Bike repair" available={hasBikeRepair}>
-						<MaterialCommunityIcons name="wrench" size={16} color={iconColor(hasBikeRepair)} />
-					</ServiceChip>
+					{chips.map(chip => (
+						<ServiceChip key={chip.label} icon={chip.icon} available={chip.available} />
+					))}
 				</View>
 			</View>
 			<Ionicons
@@ -68,22 +79,20 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 	);
 }
 
-function ServiceChip({ label, available, children }: { label: string; available: boolean; children: ReactNode }) {
+function ServiceChip({ icon, available }: { icon: ServiceKey; available: boolean }) {
 	const colors = useColors();
 
 	return (
 		<View
-			accessible
-			accessibilityLabel={available ? label : `No ${label.toLowerCase()}`}
 			style={[
-				styles.serviceIcon,
+				styles.chip,
 				{
 					borderColor: colors.border(),
 					backgroundColor: available ? colors.secondary(0.15) : 'transparent',
 				},
 			]}
 		>
-			{children}
+			<ServiceIcon service={icon} color={available ? colors.onSecondaryTint() : colors.text(0.25)} />
 			{!available && <View style={[styles.strike, { backgroundColor: colors.text(0.2) }]} />}
 		</View>
 	);
@@ -113,33 +122,26 @@ const styles = StyleSheet.create({
 	},
 	services: {
 		flexDirection: 'row',
+		flexWrap: 'wrap',
 		alignItems: 'center',
 		gap: 10,
 		marginTop: 4,
 		alignSelf: 'flex-start',
 	},
-	serviceIcon: {
-		width: 36,
-		height: 28,
+	chip: {
+		width: CHIP_WIDTH,
+		height: CHIP_HEIGHT,
 		alignItems: 'center',
 		justifyContent: 'center',
 		borderRadius: 6,
 		borderWidth: 1,
 		overflow: 'hidden',
 	},
-	parkingIcon: {
-		fontSize: 16,
-		fontWeight: '700',
-	},
 	strike: {
 		position: 'absolute',
 		left: -8,
 		right: -8,
 		height: 1,
-		transform: [{ rotate: '-38deg' }],
-	},
-	notes: {
-		fontSize: 12,
-		marginTop: 2,
+		transform: [{ rotate: STRIKE_ANGLE }],
 	},
 });

@@ -1,24 +1,17 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Waypoint, ServiceProvider, TrailheadServices } from '@/constants/waypoints';
+import { Waypoint, ServiceProvider } from '@/constants/waypoints';
+import { SERVICES, hasService } from '@/constants/services';
 import { getTrailheadImage } from '@/constants/trailheadImages';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
 import { BottomSheetScrollView, useBottomSheet } from '@gorhom/bottom-sheet';
 import { openUrl } from '@/utils/map';
 import { detailStyles } from './DetailBottomSheet';
+import ServiceIcon from './ServiceIcon';
 
 interface Props {
 	waypoint: Waypoint;
-}
-
-type ServiceKey = keyof TrailheadServices;
-
-interface ServiceConfig {
-	key: ServiceKey;
-	label: string;
-	icon: React.ReactNode;
 }
 
 const IMAGE_HEIGHT = 175;
@@ -44,31 +37,13 @@ export default function TrailheadDetail({ waypoint }: Props) {
 		),
 	}));
 
-	const getServiceConfigs = (): ServiceConfig[] => [
-		{ key: 'parking', label: 'Parking', icon: <AppText style={{ fontSize: 16, fontWeight: '700', color: colors.secondary() }}>P</AppText> },
-		{ key: 'water', label: 'Water', icon: <Ionicons name="water" size={18} color={colors.secondary()} /> },
-		{ key: 'restroom', label: 'Restroom', icon: <MaterialCommunityIcons name="human-male-female" size={18} color={colors.secondary()} /> },
-		{ key: 'camping', label: 'Camping', icon: <Ionicons name="bonfire" size={18} color={colors.secondary()} /> },
-		{ key: 'foodGrocery', label: 'Grocery', icon: <Ionicons name="cart" size={18} color={colors.secondary()} /> },
-		{ key: 'restaurant', label: 'Restaurant', icon: <Ionicons name="restaurant" size={18} color={colors.secondary()} /> },
-		{ key: 'lodging', label: 'Lodging', icon: <Ionicons name="bed" size={18} color={colors.secondary()} /> },
-		{ key: 'bikeShop', label: 'Bike Shop', icon: <Ionicons name="bicycle" size={18} color={colors.secondary()} /> },
-		{ key: 'bikeRental', label: 'Bike Rental', icon: <MaterialCommunityIcons name="bike-fast" size={18} color={colors.secondary()} /> },
-		{ key: 'bikeService', label: 'Bike Service', icon: <MaterialCommunityIcons name="wrench" size={18} color={colors.secondary()} /> },
-		{ key: 'bikeWorkStation', label: 'Work Station', icon: <MaterialCommunityIcons name="tools" size={18} color={colors.secondary()} /> },
-		{ key: 'shuttleService', label: 'Shuttle', icon: <Ionicons name="car" size={18} color={colors.secondary()} /> },
-		{ key: 'phone', label: 'Phone', icon: <Ionicons name="call" size={18} color={colors.secondary()} /> },
-	];
-
 	const getProviderLabel = (provider: ServiceProvider): string => {
 		if (provider === 'state') return 'Katy Trail State Parks';
 		if (provider === 'community') return 'Community';
 		return '';
 	};
 
-	const availableServices = getServiceConfigs().filter(
-		config => waypoint.services?.[config.key] !== null && waypoint.services?.[config.key] !== undefined
-	);
+	const availableServices = SERVICES.filter(config => hasService(waypoint.services, config.key));
 
 	const handlePhonePress = () => {
 		if (waypoint.contact?.phone) {
@@ -101,7 +76,9 @@ export default function TrailheadDetail({ waypoint }: Props) {
 									const provider = waypoint.services?.[config.key] ?? null;
 									return (
 										<View key={config.key} style={[styles.serviceItem, { borderColor: colors.border() }]}>
-											<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>{config.icon}</View>
+											<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>
+												<ServiceIcon service={config.key} color={colors.secondary()} />
+											</View>
 											<View style={styles.serviceText}>
 												<AppText style={styles.serviceLabel}>{config.label}</AppText>
 												<AppText style={[styles.serviceProvider, { color: colors.text(0.5) }]}>

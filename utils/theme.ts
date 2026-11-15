@@ -10,6 +10,8 @@ export const Colors = {
 		onPrimary: colorFn('rgb(255, 251, 206)'),
 		border: colorFn('rgb(222, 212, 168)'),
 		secondary: colorFn('rgb(153, 123, 89)'),
+		/** Icons drawn on a light `secondary` tint */
+		onSecondaryTint: colorFn('rgb(120, 94, 64)'),
 		text: colorFn('rgb(0, 0, 0)'),
 		surface: colorFn('rgb(253 255 225)'),
 		accent: colorFn('rgb(220, 100, 110)'),
@@ -22,6 +24,7 @@ export const Colors = {
 		onPrimary: colorFn('rgb(60, 58, 40)'),
 		border: colorFn('rgb(60, 58, 40)'),
 		secondary: colorFn('rgb(178, 144, 104)'),
+		onSecondaryTint: colorFn('rgb(178, 144, 104)'),
 		text: colorFn('rgb(240, 238, 220)'),
 		surface: colorFn('rgb(18, 24, 38)'),
 		accent: colorFn('rgb(220, 100, 110)'),

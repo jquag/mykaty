@@ -1,4 +1,5 @@
 import AppText from "@/components/ui/AppText";
+import ImageViewer from "@/components/ui/ImageViewer";
 import { useFunFacts } from "@/contexts/FunFactsContext";
 import useColors from "@/hooks/use-colors";
 import type { FunFact } from "@/types/FunFact";
@@ -6,6 +7,7 @@ import { getFactImage, getFactOfTheDay, getFactTitle, getFactTrailhead } from "@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 const IMAGE_SIZE = 96;
@@ -24,6 +26,7 @@ interface Props {
 export default function FunFactCard({ now }: Props) {
 	const colors = useColors();
 	const router = useRouter();
+	const [viewingImage, setViewingImage] = useState(false);
 	const fact = getFactOfTheDay(useFunFacts(), now);
 	if (!fact) return null;
 
@@ -36,11 +39,17 @@ export default function FunFactCard({ now }: Props) {
 	};
 
 	return (
-		<Pressable onPress={viewOnMap} disabled={!mapParams} style={[styles.card, { borderColor: colors.text(0.1) }]}>
-			<View style={[styles.imageTile, { backgroundColor: colors.text(0.06) }]}>
+		<View style={[styles.card, { borderColor: colors.text(0.1) }]}>
+			<Pressable
+				onPress={() => setViewingImage(true)}
+				disabled={!image}
+				style={[styles.imageTile, { backgroundColor: colors.text(0.06) }]}
+				accessibilityRole={image ? 'imagebutton' : undefined}
+				accessibilityLabel={image ? 'View larger photo' : undefined}
+			>
 				<MaterialCommunityIcons name="lightbulb-on-outline" size={36} color={colors.text(0.35)} />
 				{image && <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />}
-			</View>
+			</Pressable>
 			<View style={styles.content}>
 				<AppText style={[styles.label, { color: colors.text(0.6) }]}>
 					{getFactTrailhead(fact) ? 'Featured trailhead' : 'Did you know?'}
@@ -48,13 +57,14 @@ export default function FunFactCard({ now }: Props) {
 				{title && <AppText style={styles.title}>{title}</AppText>}
 				<AppText style={[styles.text, { color: colors.text(0.75) }]} numberOfLines={4}>{fact.text}</AppText>
 				{mapParams && (
-					<View style={styles.link}>
+					<Pressable onPress={viewOnMap} hitSlop={8} style={styles.link} accessibilityRole="link">
 						<AppText style={[styles.linkText, { color: colors.primary() }]}>View on map</AppText>
 						<MaterialCommunityIcons name="chevron-right" size={18} color={colors.primary()} />
-					</View>
+					</Pressable>
 				)}
 			</View>
-		</Pressable>
+			{image && <ImageViewer visible={viewingImage} source={image} caption={title} onClose={() => setViewingImage(false)} />}
+		</View>
 	);
 }
 
@@ -92,6 +102,7 @@ const styles = StyleSheet.create({
 	link: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		alignSelf: 'flex-start',
 		marginTop: 4,
 	},
 	linkText: {

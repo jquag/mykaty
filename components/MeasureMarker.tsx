@@ -45,12 +45,12 @@ export default function MeasureMarker({
 				<View
 					style={[
 						showLabels ? styles.marker : styles.markerSmall,
-						{ backgroundColor: colors.primary(), borderColor: colors.border() },
+						{ backgroundColor: colors.primary(), borderColor: colors.onPrimary() },
 						dragging && styles.dragging,
 					]}
 				>
 					{showLabels && (
-						<AppText style={[styles.markerText, { color: colors.border() }]}>
+						<AppText style={[styles.markerText, { color: colors.onPrimary() }]}>
 							{label}
 						</AppText>
 					)}

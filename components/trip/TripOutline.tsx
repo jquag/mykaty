@@ -41,7 +41,7 @@ export default function TripOutline({ startIndex, endIndex, itinerary }: Props) 
 		color: colors.primary(),
 		fill: colors.primary(),
 		stroke: colors.surface(),
-		textColor: colors.border(),
+		textColor: colors.onPrimary(),
 	});
 
 	const badges: Badge[] = [endpoint('start', startIndex, 'A'), endpoint('end', endIndex, 'B')];

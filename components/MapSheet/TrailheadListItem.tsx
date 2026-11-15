@@ -1,25 +1,54 @@
 import { View, StyleSheet } from 'react-native';
 import { Pressable } from 'react-native-gesture-handler';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Waypoint } from '@/constants/waypoints';
+import { ServiceKey, hasService } from '@/constants/services';
 import useColors from '@/hooks/use-colors';
 import AppText from '@/components/ui/AppText';
+import ServiceIcon from './ServiceIcon';
 
 interface Props {
 	waypoint: Waypoint;
 	onPress: () => void;
 }
 
+interface ChipConfig {
+	label: string;
+	icon: ServiceKey;
+	/** The chip is lit when any of these services is present */
+	services: ServiceKey[];
+}
+
+const CHIPS: ChipConfig[] = [
+	{ label: 'Parking', icon: 'parking', services: ['parking'] },
+	{ label: 'Water', icon: 'water', services: ['water'] },
+	{ label: 'Restroom', icon: 'restroom', services: ['restroom'] },
+	{ label: 'Food', icon: 'restaurant', services: ['restaurant', 'foodGrocery'] },
+	{ label: 'Bike repair', icon: 'bikeService', services: ['bikeShop', 'bikeService'] },
+];
+
+const CHIP_WIDTH = 36;
+const CHIP_HEIGHT = 28;
+const STRIKE_ANGLE = `${-Math.atan2(CHIP_HEIGHT, CHIP_WIDTH) * 180 / Math.PI}deg`;
+
 export default function TrailheadListItem({ waypoint, onPress }: Props) {
 	const colors = useColors();
 
-	const hasParking = waypoint.services?.parking !== null;
-	const hasWater = waypoint.services?.water !== null;
-	const hasRestroom = waypoint.services?.restroom !== null;
+	const chips = CHIPS.map(chip => ({
+		...chip,
+		available: chip.services.some(key => hasService(waypoint.services, key)),
+	}));
+
+	const accessibilityLabel = [
+		waypoint.name,
+		...chips.map(({ label, available }) => available ? label : `no ${label.toLowerCase()}`),
+	].join(', ');
 
 	return (
 		<Pressable
 			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={accessibilityLabel}
 			style={({ pressed }) => [
 				styles.container,
 				{
@@ -35,31 +64,10 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 			</View>
 			<View style={styles.content}>
 				<AppText style={styles.name}>{waypoint.name}</AppText>
-				<View style={[styles.services, { borderColor: colors.border() }]}>
-					<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>
-						<AppText style={{
-							fontSize: 16,
-							fontWeight: '700',
-							color: hasParking ? colors.secondary() : colors.text(0.2)
-						}}
-						>
-							P
-						</AppText>
-					</View>
-					<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>
-						<Ionicons
-							name="water"
-							size={18}
-							color={hasWater ? colors.secondary() : colors.text(0.2)}
-						/>
-					</View>
-					<View style={[styles.serviceIcon, { borderColor: colors.border() }]}>
-						<MaterialCommunityIcons
-							name="human-male-female"
-							size={18}
-							color={hasRestroom ? colors.secondary() : colors.text(0.2)}
-						/>
-					</View>
+				<View style={styles.services}>
+					{chips.map(chip => (
+						<ServiceChip key={chip.label} icon={chip.icon} available={chip.available} />
+					))}
 				</View>
 			</View>
 			<Ionicons
@@ -68,6 +76,25 @@ export default function TrailheadListItem({ waypoint, onPress }: Props) {
 				color={colors.text(0.4)}
 			/>
 		</Pressable>
+	);
+}
+
+function ServiceChip({ icon, available }: { icon: ServiceKey; available: boolean }) {
+	const colors = useColors();
+
+	return (
+		<View
+			style={[
+				styles.chip,
+				{
+					borderColor: colors.border(),
+					backgroundColor: available ? colors.secondary(0.15) : 'transparent',
+				},
+			]}
+		>
+			<ServiceIcon service={icon} color={available ? colors.onSecondaryTint() : colors.text(0.25)} />
+			{!available && <View style={[styles.strike, { backgroundColor: colors.text(0.2) }]} />}
+		</View>
 	);
 }
 
@@ -95,19 +122,26 @@ const styles = StyleSheet.create({
 	},
 	services: {
 		flexDirection: 'row',
+		flexWrap: 'wrap',
 		alignItems: 'center',
 		gap: 10,
 		marginTop: 4,
 		alignSelf: 'flex-start',
 	},
-	serviceIcon: {
-		paddingHorizontal: 8,
-		paddingVertical: 4,
+	chip: {
+		width: CHIP_WIDTH,
+		height: CHIP_HEIGHT,
+		alignItems: 'center',
+		justifyContent: 'center',
 		borderRadius: 6,
 		borderWidth: 1,
+		overflow: 'hidden',
 	},
-	notes: {
-		fontSize: 12,
-		marginTop: 2,
+	strike: {
+		position: 'absolute',
+		left: -8,
+		right: -8,
+		height: 1,
+		transform: [{ rotate: STRIKE_ANGLE }],
 	},
 });

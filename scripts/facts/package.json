@@ -1,0 +1,11 @@
+{
+  "name": "my-katy-facts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "publish": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON publish.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1136.0"
+  }
+}

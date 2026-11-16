@@ -20,6 +20,13 @@ const SELECTED_PLACE_DELTA = 0.04;
 const MIN_SEARCH_FIT_DELTA = 0.04;
 const FIT_MARGIN = 50;
 
+/** A spot on the map that isn't a trailhead or place, such as a fun fact's location */
+export interface MapSpot {
+	lat: number;
+	lng: number;
+	label?: string;
+}
+
 // Keeps fitted coordinates above the partially open sheet
 function getSheetFitPadding(mapHeight: number) {
 	return {
@@ -40,6 +47,7 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 	const [region, setRegion] = useState<Region | null>(null);
 	const [mapHeight, setMapHeight] = useState(0);
 	const [selected, setSelected] = useState<Place | null>(null);
+	const [spot, setSpot] = useState<MapSpot | null>(null);
 	const [query, setQuery] = useState('');
 
 	const detailLevel = getMapDetailLevel(region?.longitudeDelta);
@@ -117,6 +125,7 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 	// Offset the center so the marker appears in the visible area above the sheet
 	const select = useCallback((place: Place) => {
 		setSelected(place);
+		setSpot(null);
 		Keyboard.dismiss();
 		listSheetRef.current?.snapToIndex(LIST_SHEET_SNAP.collapsed);
 
@@ -146,6 +155,23 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 
 	const clearSelection = useCallback(() => {
 		setSelected(null);
+	}, []);
+
+	const focusSpot = useCallback((next: MapSpot) => {
+		setSelected(null);
+		setSpot(next);
+		Keyboard.dismiss();
+		listSheetRef.current?.snapToIndex(LIST_SHEET_SNAP.collapsed);
+		mapRef.current?.animateToRegion({
+			latitude: next.lat,
+			longitude: next.lng,
+			latitudeDelta: SELECTED_PLACE_DELTA,
+			longitudeDelta: SELECTED_PLACE_DELTA,
+		}, 500);
+	}, []);
+
+	const clearSpot = useCallback(() => {
+		setSpot(null);
 	}, []);
 
 	// Shows the results in the list sheet partially open, with the map framing them all above it
@@ -185,6 +211,9 @@ export default function usePlaceMap(enabledCategories: ReadonlySet<PoiCategory>)
 		selectedRoute,
 		select,
 		clearSelection,
+		spot,
+		focusSpot,
+		clearSpot,
 		query,
 		setQuery,
 		searching,

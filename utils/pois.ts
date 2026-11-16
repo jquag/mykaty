@@ -13,6 +13,7 @@ import {
 import { waypoints } from '@/constants/waypoints';
 import { Place } from '@/types/Place';
 import { decodePolyline } from '@/utils/map';
+import { fetchManifestFile, fetchOk } from '@/utils/remote-data';
 import { saveCachedPoiRoutes, saveCachedPois } from '@/utils/storage';
 import { getWaypointTrailMile, trailCoordinates } from '@/utils/trail';
 import type { LatLng } from 'react-native-maps';
@@ -20,22 +21,6 @@ import type { LatLng } from 'react-native-maps';
 const MIN_QUERY_LENGTH = 2;
 const MAX_SEARCH_RESULTS = 50;
 const ON_TRAIL_MILES = 0.1;
-
-async function fetchOk(url: string) {
-	const response = await fetch(url);
-	if (!response.ok) throw new Error(`${url} returned ${response.status}`);
-	return response;
-}
-
-// CDN caches expire independently, so a fresh manifest can arrive alongside a stale file
-async function fetchManifestFile<T extends { generatedAt: string }>(file: string, manifest: PoiManifest) {
-	const json = await (await fetchOk(`${POI_BASE_URL}/${file}`)).text();
-	const parsed: T = JSON.parse(json);
-	if (parsed.generatedAt !== manifest.generatedAt) {
-		throw new Error(`${file} does not match the manifest`);
-	}
-	return { json, parsed };
-}
 
 /**
  * Downloads and caches pois.json and routes.json when the published manifest differs from the cached copies.
@@ -53,10 +38,10 @@ export async function fetchPoiDataIfChanged(
 
 	const pois = manifest.sha256 === cachedPoisSha
 		? null
-		: await fetchManifestFile<PoiFile>(manifest.file, manifest);
+		: await fetchManifestFile<PoiFile>(POI_BASE_URL, manifest.file, manifest);
 	const routes = !manifest.routes || manifest.routes.sha256 === cachedRoutesSha
 		? null
-		: await fetchManifestFile<PoiRouteFile>(manifest.routes.file, manifest);
+		: await fetchManifestFile<PoiRouteFile>(POI_BASE_URL, manifest.routes.file, manifest);
 
 	if (pois) await saveCachedPois(pois.json, manifest.sha256);
 	if (routes && manifest.routes) await saveCachedPoiRoutes(routes.json, manifest.routes.sha256);

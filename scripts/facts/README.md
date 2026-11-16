@@ -35,8 +35,8 @@ The credentials need `s3:GetObject`, `s3:PutObject` and `s3:ListBucket` on the b
 ```
 
 - **Location** adds a "View on map" link. A `trailhead` must match a name in `constants/waypoints.ts`, and the map opens that trailhead. A `lat`/`lng` must be within 0.5 mi of the trail, and the map drops a pin there labelled with the title.
-- **Image**: without one, a fact at a trailhead uses the trailhead's photo, and any other fact shows a lightbulb. The card shows images at 96×96, so a square-ish JPEG around 600 px wide is plenty. Anything over 500 KB gets a warning.
-- **Image names are permanent.** Once a photo is published, the CDN and the app keep it forever under that name. To change a photo, save it under a new name. The script refuses to publish a changed file under a published name.
+- **Image**: without one, a fact at a trailhead uses the trailhead's photo, and any other fact shows a lightbulb. The card crops the image to a small square and tapping it opens the photo full screen, so use a JPEG about 1200–1600 px on the long side with the subject in the middle. Anything over 500 KB gets a warning.
+- **Image names are permanent.** Once a photo is published, the CDN and the app cache it under that name. To change a photo, save it under a new name. The script refuses to publish a changed file under a published name.
 - **Order** in the file is the rotation order. Each day shows the next fact, the same for everyone.
 
 ## Publishing
@@ -60,4 +60,4 @@ It skips the question when the bucket isn't set, when nothing changed, or when i
 |---|---|---|
 | `manifest.json` | 1 hour | `generatedAt`, the SHA-256 of `facts.json`, and every published image with its SHA-256. The app checks this at most once a day. |
 | `facts.json` | 1 hour | `schemaVersion`, `generatedAt` and the facts. |
-| `images/<name>` | forever | Photos. The app saves them to disk ahead of time, so they show without signal. |
+| `images/<name>` | forever | Photos. The app downloads each one the first time the card shows it and keeps it on disk. |

@@ -105,7 +105,7 @@ function validateLocation(label: string, location: unknown): FactLocation | unde
 		}
 		const miles = milesFromTrail(lat, lng);
 		if (miles > MAX_MILES_FROM_TRAIL) {
-			errors.push(`${label}: ${lat}, ${lng} is ${miles.toFixed(1)} mi from the trail (limit ${MAX_MILES_FROM_TRAIL} mi)`);
+			errors.push(`${label}: ${lat}, ${lng} is ${miles.toFixed(2)} mi from the trail (limit ${MAX_MILES_FROM_TRAIL} mi)`);
 			return undefined;
 		}
 		return { lat, lng };
@@ -125,7 +125,7 @@ function validateImage(label: string, image: unknown) {
 		return undefined;
 	}
 	const kb = statSync(path).size / 1024;
-	if (kb > MAX_IMAGE_KB) warnings.push(`${image} is ${kb.toFixed(0)} KB; aim for under ${MAX_IMAGE_KB} KB`);
+	if (kb > MAX_IMAGE_KB) warnings.push(`${image} is ${Math.ceil(kb)} KB; aim for under ${MAX_IMAGE_KB} KB`);
 	return image;
 }
 
@@ -215,12 +215,19 @@ function imageHashes(facts: Fact[]) {
 	return hashes;
 }
 
-function writeOutputs(facts: Fact[], images: Record<string, string>, published: Awaited<ReturnType<typeof loadPublished>>) {
-	const publishedImages = published?.manifest.images ?? {};
+function writeOutputs(
+	facts: Fact[],
+	images: Record<string, string>,
+	publishedImages: Record<string, string>,
+	newImages: string[],
+	published: Awaited<ReturnType<typeof loadPublished>>,
+) {
 	const allImages = { ...publishedImages, ...images };
+	// A manifest older than facts.json means the last publish stopped before uploading it
 	const unchanged = published !== null
-		&& JSON.stringify(published.file.facts) === JSON.stringify(facts)
-		&& Object.keys(images).every(name => name in publishedImages);
+		&& published.manifest.generatedAt === published.file.generatedAt
+		&& newImages.length === 0
+		&& JSON.stringify(published.file.facts) === JSON.stringify(facts);
 	const generatedAt = unchanged ? published.file.generatedAt : new Date().toISOString();
 	const file: FactFile = { schemaVersion: SCHEMA_VERSION, generatedAt, facts };
 	const body = JSON.stringify(file, null, 1) + "\n";
@@ -243,6 +250,10 @@ async function confirm(question: string) {
 	try {
 		const answer = await prompt.question(`${question} [y/N] `);
 		return /^y(es)?$/i.test(answer.trim());
+	} catch (error) {
+		// Ctrl+C or Ctrl+D at the prompt
+		if ((error as { code?: string }).code === "ABORT_ERR") return false;
+		throw error;
 	} finally {
 		prompt.close();
 	}
@@ -251,9 +262,11 @@ async function confirm(question: string) {
 const facts = validateFacts(JSON.parse(readFileSync(SOURCE_PATH, "utf8")));
 const images = errors.length ? {} : imageHashes(facts);
 const published = errors.length ? null : await loadPublished();
+const publishedImages = published?.manifest.images ?? {};
+const newImages = Object.keys(images).filter(name => !(name in publishedImages));
 
 for (const [name, hash] of Object.entries(images)) {
-	const publishedHash = published?.manifest.images?.[name];
+	const publishedHash = publishedImages[name];
 	if (publishedHash && publishedHash !== hash) {
 		errors.push(`${IMAGES_FOLDER}/${name} differs from the published image of that name; save the new photo under a new name`);
 	}
@@ -271,7 +284,7 @@ const atSpots = facts.filter(fact => fact.location && "lat" in fact.location).le
 console.log(`${facts.length} facts: ${atTrailheads} at trailheads, ${atSpots} at other spots, ${facts.length - atTrailheads - atSpots} without a location; ${Object.keys(images).length} images`);
 
 if (published) reportChanges(facts, published.file);
-const unchanged = writeOutputs(facts, images, published);
+const unchanged = writeOutputs(facts, images, publishedImages, newImages, published);
 if (published) console.log(`compare: vimdiff ${relative(process.cwd(), PUBLISHED_PATH)} ${relative(process.cwd(), FACTS_PATH)}`);
 
 if (!s3Configured) process.exit(0);
@@ -284,7 +297,6 @@ if (!process.stdin.isTTY) {
 	process.exit(0);
 }
 
-const newImages = Object.keys(images).filter(name => !(name in (published?.manifest.images ?? {})));
 console.log("");
 if (await confirm(`Publish to ${s3Target}${newImages.length ? ` with ${newImages.length} new ${newImages.length === 1 ? "image" : "images"}` : ""}?`)) {
 	for (const name of newImages) {

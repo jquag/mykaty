@@ -1,8 +1,7 @@
 import bundledFile from "@/scripts/facts/facts.json";
 import type { FunFact } from "@/types/FunFact";
-import { FACTS_CHECK_INTERVAL_MS, fetchFunFactsIfChanged, getFactImageUrl, parseFunFacts } from "@/utils/fun-facts";
+import { FACTS_CHECK_INTERVAL_MS, fetchFunFactsIfChanged, parseFunFacts } from "@/utils/fun-facts";
 import { getCachedFunFacts, getFunFactsCheckedAt, saveFunFactsCheckedAt } from "@/utils/storage";
-import { Image } from "expo-image";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 const FunFactsContext = createContext<FunFact[] | undefined>(undefined);
@@ -10,12 +9,16 @@ const FunFactsContext = createContext<FunFact[] | undefined>(undefined);
 // Shown until a published copy has been downloaded
 const BUNDLED_FACTS = parseFunFacts(bundledFile);
 
-// Saves images to disk when a new copy arrives, so they still show without signal on the trail.
-// Prefetching always downloads, even when the image is already cached.
-function prefetchImages(facts: FunFact[]) {
-	const urls = facts.flatMap(fact => getFactImageUrl(fact) ?? []);
-	if (urls.length === 0) return;
-	Image.prefetch(urls, 'disk').catch(error => console.warn('Error prefetching fun fact images:', error));
+// The cached copy, when it has facts this app version can show
+async function readCache() {
+	try {
+		const cached = await getCachedFunFacts();
+		const facts = parseFunFacts(cached?.file);
+		return cached && facts.length > 0 ? { facts, sha: cached.sha } : null;
+	} catch (error) {
+		console.warn('Error reading cached fun facts:', error);
+		return null;
+	}
 }
 
 export function FunFactsProvider({ children }: { children: ReactNode }) {
@@ -25,26 +28,16 @@ export function FunFactsProvider({ children }: { children: ReactNode }) {
 		let cancelled = false;
 
 		const load = async () => {
-			let cached = null;
-			try {
-				cached = await getCachedFunFacts();
-			} catch (error) {
-				console.warn('Error reading cached fun facts:', error);
-			}
-			const cachedFacts = cached ? parseFunFacts(cached.file) : [];
+			const cached = await readCache();
 			if (cancelled) return;
-			if (cachedFacts.length > 0) setFacts(cachedFacts);
+			if (cached) setFacts(cached.facts);
 
 			try {
 				const checkedAt = await getFunFactsCheckedAt();
-				if (cachedFacts.length > 0 && checkedAt !== null && Date.now() - checkedAt < FACTS_CHECK_INTERVAL_MS) return;
+				if (cached && checkedAt !== null && Date.now() - checkedAt < FACTS_CHECK_INTERVAL_MS) return;
 
-				const updated = await fetchFunFactsIfChanged(cachedFacts.length > 0 ? cached?.sha : undefined);
-				const updatedFacts = updated ? parseFunFacts(updated) : [];
-				if (updatedFacts.length > 0) {
-					if (!cancelled) setFacts(updatedFacts);
-					prefetchImages(updatedFacts);
-				}
+				const updatedFacts = parseFunFacts(await fetchFunFactsIfChanged(cached?.sha));
+				if (updatedFacts.length > 0 && !cancelled) setFacts(updatedFacts);
 				await saveFunFactsCheckedAt(Date.now());
 			} catch (error) {
 				console.warn('Error updating fun facts:', error);

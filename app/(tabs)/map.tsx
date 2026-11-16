@@ -1,5 +1,6 @@
 import PoiMarker from "@/components/PoiMarker";
 import SegmentStatusCard from "@/components/SegmentStatusCard";
+import SpotMarker from "@/components/SpotMarker";
 import TrailheadMarker from "@/components/TrailheadMarker";
 import DetailBottomSheet from "@/components/MapSheet/DetailBottomSheet";
 import PoiDetail from "@/components/MapSheet/PoiDetail";
@@ -20,7 +21,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Keyboard, View, StyleSheet } from "react-native";
 import { Pressable } from "react-native-gesture-handler";
-import MapView, { MapPressEvent, Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { MapPressEvent, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 
 const MEASURE_FIT_MARGIN = 40;
 
@@ -88,8 +89,8 @@ export default function MapScreen() {
 		if ((!trailhead && !lat && !lng) || !mapReady) return;
 		router.setParams({ trailhead: undefined, lat: undefined, lng: undefined, label: undefined });
 		const waypoint = trailhead ? waypoints.find(wp => wp.name === trailhead) : undefined;
-		const spotLat = Number(lat);
-		const spotLng = Number(lng);
+		const spotLat = lat?.trim() ? Number(lat) : NaN;
+		const spotLng = lng?.trim() ? Number(lng) : NaN;
 		const hasSpot = !trailhead && Number.isFinite(spotLat) && Number.isFinite(spotLng);
 		if (!waypoint && !hasSpot) return;
 		segment.clear();
@@ -144,14 +145,7 @@ export default function MapScreen() {
 					<PoiMarker key={poi.id} poi={poi} focused={selectedPoi?.id === poi.id} onPress={() => select({ kind: 'poi', poi })} />
 				))}
 
-				{!measureMode && spot && (
-					<Marker
-						coordinate={{ latitude: spot.lat, longitude: spot.lng }}
-						title={spot.label}
-						pinColor={colors.primary()}
-						zIndex={2}
-					/>
-				)}
+				{!measureMode && spot && <SpotMarker key={`${spot.lat},${spot.lng},${spot.label ?? ''}`} spot={spot} />}
 
 				{!measureMode || showLabels ? trailheadMarkers.map(waypoint => (
 					<TrailheadMarker key={`${waypoint.lat}-${waypoint.lng}`} waypoint={waypoint} showLabels={showLabels || selectedWaypoint === waypoint} focused={selectedWaypoint === waypoint} expandHitArea={!measureMode} onPress={measureMode ? undefined : () => select({ kind: 'trailhead', waypoint })} />

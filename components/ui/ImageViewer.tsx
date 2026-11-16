@@ -11,13 +11,13 @@ interface Props {
 	onClose: () => void;
 }
 
-/** A photo shown full screen over a dark backdrop; tapping anywhere closes it */
+/** A photo shown full screen on black; tapping anywhere closes it */
 export default function ImageViewer({ visible, source, caption, onClose }: Props) {
 	const insets = useSafeAreaInsets();
 
 	return (
 		<Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-			<Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close photo">
+			<Pressable style={styles.backdrop} onPress={onClose} accessible={false}>
 				<Image source={source} style={styles.image} contentFit="contain" />
 				{caption && (
 					<AppText style={[styles.caption, { bottom: insets.bottom + 24 }]}>{caption}</AppText>
@@ -39,7 +39,7 @@ export default function ImageViewer({ visible, source, caption, onClose }: Props
 const styles = StyleSheet.create({
 	backdrop: {
 		flex: 1,
-		backgroundColor: 'rgba(0, 0, 0, 0.92)',
+		backgroundColor: 'black',
 		justifyContent: 'center',
 	},
 	image: {

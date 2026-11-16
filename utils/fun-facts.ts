@@ -5,8 +5,8 @@ import { fetchManifestFile, fetchOk } from '@/utils/remote-data';
 import { saveCachedFunFacts } from '@/utils/storage';
 import type { ImageSourcePropType } from 'react-native';
 
-export const FACTS_BASE_URL = 'https://d1z2mt0madk0y1.cloudfront.net/facts';
-export const FACTS_SCHEMA_VERSION = 1;
+const FACTS_BASE_URL = 'https://d1z2mt0madk0y1.cloudfront.net/facts';
+const FACTS_SCHEMA_VERSION = 1;
 export const FACTS_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -28,6 +28,13 @@ function parseLocation(value: unknown): FunFactLocation | undefined {
 	return undefined;
 }
 
+function parseTitle(entry: Record<string, unknown>, location: FunFactLocation | undefined) {
+	if (isNonEmptyString(entry.title)) return entry.title;
+	// A trailhead newer than this app version still names the fact, though it can't link to the map
+	if (!location && isObject(entry.location) && isNonEmptyString(entry.location.trailhead)) return entry.location.trailhead;
+	return undefined;
+}
+
 /**
  * The well-formed facts in a facts file, or none when it isn't a file this app version can read
  */
@@ -36,10 +43,11 @@ export function parseFunFacts(file: unknown): FunFact[] {
 	return file.facts.flatMap((entry: unknown): FunFact[] => {
 		if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.text)) return [];
 		const location = parseLocation(entry.location);
+		const title = parseTitle(entry, location);
 		return [{
 			id: entry.id,
 			text: entry.text,
-			...(isNonEmptyString(entry.title) && { title: entry.title }),
+			...(title && { title }),
 			...(isNonEmptyString(entry.image) && { image: entry.image }),
 			...(location && { location }),
 		}];
@@ -80,7 +88,7 @@ export function getFactTitle(fact: FunFact) {
 	return fact.title ?? getFactTrailhead(fact)?.name;
 }
 
-export function getFactImageUrl(fact: FunFact) {
+function getFactImageUrl(fact: FunFact) {
 	return fact.image ? `${FACTS_BASE_URL}/images/${encodeURIComponent(fact.image)}` : undefined;
 }
 
